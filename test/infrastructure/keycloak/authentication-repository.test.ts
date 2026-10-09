@@ -29,6 +29,52 @@ describe("KeycloakAuthenticationRepository", () => {
     expect(flows[0]?.alias).toBe("browser");
   });
 
+  it("lists flow executions", async () => {
+    const { repo, fetch } = makeRepo([
+      jsonResponse([
+        {
+          id: "e1",
+          displayName: "Cookie",
+          requirement: "ALTERNATIVE",
+          providerId: "auth-cookie",
+          index: 0,
+          level: 0,
+        },
+      ]),
+    ]);
+    const executions = await repo.listFlowExecutions("browser");
+    expect(executions[0]?.providerId).toBe("auth-cookie");
+    expect(fetch.requests[0]?.url).toContain(
+      "/authentication/flows/browser/executions",
+    );
+  });
+
+  it("copies a flow", async () => {
+    const { repo, fetch } = makeRepo([new Response(null, { status: 201 })]);
+    await repo.copyFlow("browser", "browser-copy");
+    expect(fetch.requests[0]?.method).toBe("POST");
+    expect(fetch.requests[0]?.url).toContain(
+      "/authentication/flows/browser/copy",
+    );
+    expect(fetch.requests[0]?.body).toContain('"newName":"browser-copy"');
+  });
+
+  it("binds a realm flow via GET then PUT merge", async () => {
+    const { repo, fetch } = makeRepo([
+      jsonResponse({
+        realm: "demo-realm",
+        browserFlow: "browser",
+        enabled: true,
+      }),
+      new Response(null, { status: 204 }),
+    ]);
+    await repo.bindRealmFlow("browserFlow", "browser-copy");
+    expect(fetch.requests[0]?.method).toBe("GET");
+    expect(fetch.requests[1]?.method).toBe("PUT");
+    expect(fetch.requests[1]?.body).toContain('"browserFlow":"browser-copy"');
+    expect(fetch.requests[1]?.body).toContain('"enabled":true');
+  });
+
   it("lists required actions", async () => {
     const { repo } = makeRepo([
       jsonResponse([

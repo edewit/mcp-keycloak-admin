@@ -14,6 +14,7 @@ describe("authentication tools", () => {
       filterTools(tools, ToolAccessPolicy.of(true)).map((tool) => tool.name),
     ).toEqual([
       "keycloak_auth_flows_list",
+      "keycloak_auth_flow_executions_list",
       "keycloak_auth_required_actions_list",
     ]);
   });

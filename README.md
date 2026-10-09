@@ -200,6 +200,9 @@ Currently implemented:
 | `keycloak_federation_get`                   | R     | Fetch a federation provider by id.                                  |
 | `keycloak_federation_sync`                  | W     | Trigger a user sync (full or changed).                              |
 | `keycloak_auth_flows_list`                  | R     | List authentication flows.                                          |
+| `keycloak_auth_flow_executions_list`        | R     | List executions (steps) for one authentication flow.                |
+| `keycloak_auth_flow_copy`                   | W     | Copy an authentication flow to a new alias.                         |
+| `keycloak_auth_flow_bind`                   | W     | Bind a flow to a realm slot (browser, first broker login, …).       |
 | `keycloak_auth_required_actions_list`       | R     | List required actions.                                              |
 | `keycloak_auth_required_action_set_enabled` | W     | Enable/disable a required action.                                   |
 | `keycloak_authz_resources_list`             | R     | List a client's authorization resources.                            |
@@ -219,7 +222,7 @@ See [docs/users.md](docs/users.md), [docs/roles.md](docs/roles.md),
 
 The architecture is designed to keep growing as thin use cases + tools.
 Remaining candidates: authorization policy/permission CRUD and evaluation,
-authentication flow mutation (copy/add executions), and advanced federation and
+adding/removing individual flow executions, and advanced federation and
 identity-provider configuration. See [docs/development.md](docs/development.md)
 for how to add one.
 
