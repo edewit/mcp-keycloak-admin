@@ -16,7 +16,11 @@ export interface AuthFlowExecution {
   readonly authenticationFlow: boolean;
   readonly configurable: boolean;
   readonly flowId?: string;
+  readonly requirementChoices?: readonly string[];
 }
+
+export type AuthFlowRequirement =
+  "REQUIRED" | "ALTERNATIVE" | "DISABLED" | "CONDITIONAL";
 
 export type RealmFlowBinding =
   | "browserFlow"
@@ -26,6 +30,12 @@ export type RealmFlowBinding =
   | "clientAuthenticationFlow"
   | "dockerAuthenticationFlow"
   | "firstBrokerLoginFlow";
+
+export interface AuthenticatorProvider {
+  readonly id: string;
+  readonly displayName: string;
+  readonly description: string;
+}
 
 export interface RequiredAction {
   readonly alias: string;

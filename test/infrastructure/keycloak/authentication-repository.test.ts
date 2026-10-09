@@ -49,6 +49,14 @@ describe("KeycloakAuthenticationRepository", () => {
     );
   });
 
+  it("lists authenticator providers", async () => {
+    const { repo } = makeRepo([
+      jsonResponse([{ id: "auth-otp-form", displayName: "OTP Form" }]),
+    ]);
+    const providers = await repo.listAuthenticatorProviders();
+    expect(providers[0]?.id).toBe("auth-otp-form");
+  });
+
   it("copies a flow", async () => {
     const { repo, fetch } = makeRepo([new Response(null, { status: 201 })]);
     await repo.copyFlow("browser", "browser-copy");
@@ -73,6 +81,57 @@ describe("KeycloakAuthenticationRepository", () => {
     expect(fetch.requests[1]?.method).toBe("PUT");
     expect(fetch.requests[1]?.body).toContain('"browserFlow":"browser-copy"');
     expect(fetch.requests[1]?.body).toContain('"enabled":true');
+  });
+
+  it("adds an execution", async () => {
+    const { repo, fetch } = makeRepo([new Response(null, { status: 201 })]);
+    await repo.addExecution("browser-copy", "auth-otp-form");
+    expect(fetch.requests[0]?.method).toBe("POST");
+    expect(fetch.requests[0]?.url).toContain(
+      "/authentication/flows/browser-copy/executions/execution",
+    );
+    expect(fetch.requests[0]?.body).toContain('"provider":"auth-otp-form"');
+  });
+
+  it("updates an execution requirement via GET list then PUT", async () => {
+    const { repo, fetch } = makeRepo([
+      jsonResponse([
+        {
+          id: "e1",
+          displayName: "OTP Form",
+          requirement: "DISABLED",
+          providerId: "auth-otp-form",
+        },
+      ]),
+      new Response(null, { status: 204 }),
+    ]);
+    await repo.updateExecutionRequirement("browser-copy", "e1", "REQUIRED");
+    expect(fetch.requests[0]?.method).toBe("GET");
+    expect(fetch.requests[1]?.method).toBe("PUT");
+    expect(fetch.requests[1]?.body).toContain('"requirement":"REQUIRED"');
+    expect(fetch.requests[1]?.body).toContain('"id":"e1"');
+  });
+
+  it("raises and lowers execution priority", async () => {
+    const { repo, fetch } = makeRepo([
+      new Response(null, { status: 204 }),
+      new Response(null, { status: 204 }),
+    ]);
+    await repo.raiseExecutionPriority("e1");
+    await repo.lowerExecutionPriority("e1");
+    expect(fetch.requests[0]?.url).toContain(
+      "/authentication/executions/e1/raise-priority",
+    );
+    expect(fetch.requests[1]?.url).toContain(
+      "/authentication/executions/e1/lower-priority",
+    );
+  });
+
+  it("deletes an execution", async () => {
+    const { repo, fetch } = makeRepo([new Response(null, { status: 204 })]);
+    await repo.deleteExecution("e1");
+    expect(fetch.requests[0]?.method).toBe("DELETE");
+    expect(fetch.requests[0]?.url).toContain("/authentication/executions/e1");
   });
 
   it("lists required actions", async () => {
