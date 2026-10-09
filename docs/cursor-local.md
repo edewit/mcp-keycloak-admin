@@ -9,7 +9,16 @@ Follow [setup-keycloak.md](setup-keycloak.md). For flow tools you also need
 
 ## 2. Cursor MCP config
 
-User or project `mcp.json` (paths adjusted to your machine):
+**Wrong place:** `~/.cursor/skills/.../mcp.json` — skills do not load MCP servers.
+
+**Right places (pick one):**
+
+| Scope               | Path                                                      |
+| ------------------- | --------------------------------------------------------- |
+| User (all projects) | `~/.cursor/mcp.json`                                      |
+| This project only   | `<repo>/.cursor/mcp.json` (gitignored — may hold secrets) |
+
+Example user config:
 
 ```json
 {
@@ -36,8 +45,18 @@ the `mcp-admin` client exists.
 
 Rebuild after pulling: `npm run build`.
 
+**Restart the agent / Cursor chat** after changing `mcp.json` — MCP servers are
+loaded at session start. In Cursor IDE you can also check **Settings → MCP**
+and confirm `keycloak` shows as connected.
+
 ## 3. Skill pack
 
-Install the local Keycloak skill under `~/.cursor/skills/keycloak/` (router +
-`references/`). It tells the agent which MCP tools to call for common admin
-intents.
+Versioned skills live at [`skills/keycloak/`](../skills/keycloak/) (router +
+`references/`). For Cursor project discovery, `.cursor/skills/keycloak` symlinks
+there (see `.gitignore` exceptions).
+
+User-wide without opening this repo:
+
+```bash
+ln -sfn /path/to/mcp-keycloak-admin/skills/keycloak ~/.cursor/skills/keycloak
+```
