@@ -1,1 +1,4 @@
+# Refuse Claude attribution (personal check, ~/.config/nix config/git-hooks); skipped where it is absent (CI).
+check="$HOME/.config/git/hooks/_no-claude-attribution"
+if [ -x "$check" ]; then "$check" "$1" || exit 1; fi
 npx --no -- commitlint --edit "$1"
