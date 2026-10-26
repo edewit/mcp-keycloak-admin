@@ -25,6 +25,7 @@ const eventLog: EventLog = {
 
 const realmInfo: RealmInfo = {
   getRealmConfig: () => Promise.resolve({ realm: "demo-realm", enabled: true }),
+  updateRealmConfig: () => Promise.resolve(),
   serverInfo: () => Promise.resolve({ systemInfo: { version: "26.0.5" } }),
 };
 

@@ -1,7 +1,5 @@
 # Events & realm tools
 
-All read-only.
-
 ## `keycloak_events_login` [R]
 
 Read recent login events.
@@ -27,7 +25,21 @@ Returns `time`, `operationType`, `resourceType`, `resourcePath`.
 ## `keycloak_realm_get_config` [R]
 
 Read a curated set of realm configuration flags (registration, password reset,
-email verification, brute-force protection, token lifespans, …). No parameters.
+email verification, brute-force protection, token lifespans, `browserFlow`,
+WebAuthn passwordless policy fields, and a redacted `smtpServer` summary —
+host/from/flags + `hasPassword`, never the password). No parameters.
+
+## `keycloak_realm_update` [W]
+
+Read-merge-write selected realm fields so omitted values are not blanked.
+Provide at least one of `smtpServer` or `webAuthnPasswordlessPolicy`.
+
+| Parameter                    | Type   | Required | Description                                                                |
+| ---------------------------- | ------ | -------- | -------------------------------------------------------------------------- |
+| `smtpServer`                 | object | no\*     | Replaces realm SMTP (`host`, `from`, optional `port`/`auth`/`user`/…).     |
+| `webAuthnPasswordlessPolicy` | object | no\*     | Sets `webAuthnPolicyPasswordless*` only (`rpId`, `requireResidentKey`, …). |
+
+\* At least one required.
 
 ## `keycloak_server_info` [R]
 
