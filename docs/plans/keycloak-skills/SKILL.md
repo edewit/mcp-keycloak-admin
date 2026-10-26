@@ -11,12 +11,20 @@ description: >-
 ---
 
 <!-- Local Keycloak admin skill — router only. Procedures live under references/. -->
+<!--
+  Adapted from "keycloak-skills" by Phase Two, Inc.
+  https://github.com/p2-inc/keycloak-skills
+  Licensed under CC BY-SA 4.0. Rewired for stock Keycloak + mcp-keycloak-admin.
+-->
 
 # Keycloak (local / self-managed)
 
 Detect intent → load **one** reference → use MCP tools → **verify by re-read**.
 
 Never delete a realm via improvisation — that tool is out of scope.
+
+**Attribution:** procedure recipes are adapted from
+[Phase Two keycloak-skills](https://github.com/p2-inc/keycloak-skills) (CC BY-SA 4.0).
 
 ## Step 0: Tooling
 

@@ -249,7 +249,11 @@ tool: [docs/development.md](docs/development.md).
 Agent skill pack and SkillsBench tasks live under
 [docs/plans/](docs/plans/) (passkey login has been proven end-to-end with Claude
 
-- MCP). See [docs/plans/benchmarks/README.md](docs/plans/benchmarks/README.md).
+- MCP). Recipes and benchmark tasks are **adapted from**
+  [Phase Two’s keycloak-skills](https://github.com/p2-inc/keycloak-skills)
+  (CC BY-SA 4.0 for task/skill markdown; Apache-2.0 for harness code), rewired to
+  prefer this server’s `keycloak_*` MCP tools. Details:
+  [docs/plans/benchmarks/README.md](docs/plans/benchmarks/README.md).
 
 ## Development
 
