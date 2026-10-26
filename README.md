@@ -1,8 +1,8 @@
 # mcp-keycloak-admin
 
 [![npm version](https://img.shields.io/npm/v/mcp-keycloak-admin.svg)](https://www.npmjs.com/package/mcp-keycloak-admin)
-[![CI](https://github.com/mrz1880/mcp-keycloak-admin/actions/workflows/ci.yml/badge.svg)](https://github.com/mrz1880/mcp-keycloak-admin/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/mrz1880/mcp-keycloak-admin/actions/workflows/codeql.yml/badge.svg)](https://github.com/mrz1880/mcp-keycloak-admin/actions/workflows/codeql.yml)
+[![CI](https://github.com/edewit/mcp-keycloak-admin/actions/workflows/ci.yml/badge.svg)](https://github.com/edewit/mcp-keycloak-admin/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/edewit/mcp-keycloak-admin/actions/workflows/codeql.yml/badge.svg)](https://github.com/edewit/mcp-keycloak-admin/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server to
@@ -11,6 +11,13 @@ REST API. Safe by default, configurable, and built with a clean, test-driven
 architecture.
 
 Compatible with **Keycloak 26.x** (validated against 26.0.5).
+
+> **This repository** ([edewit/mcp-keycloak-admin](https://github.com/edewit/mcp-keycloak-admin))
+> is the maintained line for auth-flow mutation, realm SMTP/WebAuthn updates,
+> and the agent skill + SkillsBench pack under [`docs/plans/`](docs/plans/).
+> The npm package name may still resolve to the upstream release until published
+> from here — for Cursor, point MCP at a local `npm run build` checkout (see
+> [docs/cursor-local.md](docs/cursor-local.md)).
 
 ## Install
 
@@ -232,8 +239,17 @@ See [docs/users.md](docs/users.md), [docs/roles.md](docs/roles.md),
 
 The architecture is designed to keep growing as thin use cases + tools.
 Remaining candidates: authorization policy/permission CRUD and evaluation,
-realm attributes / ACR helpers, and advanced federation and identity-provider
-configuration. See [docs/development.md](docs/development.md) for how to add one.
+realm attributes / ACR helpers, live integration tests for auth/realm
+mutation, and advanced federation and identity-provider configuration.
+Working checklist: [docs/plans/STATUS.md](docs/plans/STATUS.md). How to add a
+tool: [docs/development.md](docs/development.md).
+
+## Skills & benchmarks
+
+Agent skill pack and SkillsBench tasks live under
+[docs/plans/](docs/plans/) (passkey login has been proven end-to-end with Claude
+
+- MCP). See [docs/plans/benchmarks/README.md](docs/plans/benchmarks/README.md).
 
 ## Development
 
