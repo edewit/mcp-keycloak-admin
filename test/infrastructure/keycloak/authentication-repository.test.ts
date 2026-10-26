@@ -57,6 +57,17 @@ describe("KeycloakAuthenticationRepository", () => {
     expect(providers[0]?.id).toBe("auth-otp-form");
   });
 
+  it("creates an empty top-level flow", async () => {
+    const { repo, fetch } = makeRepo([new Response(null, { status: 201 })]);
+    await repo.createFlow("Passkey Only", "passwordless");
+    expect(fetch.requests[0]?.method).toBe("POST");
+    expect(fetch.requests[0]?.url).toContain("/authentication/flows");
+    expect(fetch.requests[0]?.url).not.toContain("/copy");
+    expect(fetch.requests[0]?.body).toContain('"alias":"Passkey Only"');
+    expect(fetch.requests[0]?.body).toContain('"providerId":"basic-flow"');
+    expect(fetch.requests[0]?.body).toContain('"topLevel":true');
+  });
+
   it("copies a flow", async () => {
     const { repo, fetch } = makeRepo([new Response(null, { status: 201 })]);
     await repo.copyFlow("browser", "browser-copy");
@@ -91,6 +102,18 @@ describe("KeycloakAuthenticationRepository", () => {
       "/authentication/flows/browser-copy/executions/execution",
     );
     expect(fetch.requests[0]?.body).toContain('"provider":"auth-otp-form"');
+  });
+
+  it("adds a nested sub-flow", async () => {
+    const { repo, fetch } = makeRepo([new Response(null, { status: 201 })]);
+    await repo.addSubFlow("Passkey Only", "Passkey Only forms");
+    expect(fetch.requests[0]?.method).toBe("POST");
+    expect(fetch.requests[0]?.url).toContain(
+      "/authentication/flows/Passkey%20Only/executions/flow",
+    );
+    expect(fetch.requests[0]?.body).toContain('"alias":"Passkey Only forms"');
+    expect(fetch.requests[0]?.body).toContain('"provider":"basic-flow"');
+    expect(fetch.requests[0]?.body).toContain('"type":"basic-flow"');
   });
 
   it("updates an execution requirement via GET list then PUT", async () => {

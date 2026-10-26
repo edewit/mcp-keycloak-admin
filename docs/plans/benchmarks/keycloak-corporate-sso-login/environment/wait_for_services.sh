@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Copyright 2026 Phase Two, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+# Blocks until Keycloak is serving both imported realms AND the MCP server is
+# answering, or fails after ~180s. Installed as /usr/local/bin/wait-for-services.
+#
+# The container's command is started as soon as the services are launched rather
+# than after they are ready, so anything that talks to them - the agent's
+# session, the oracle, the verifier - can be scheduled during the few seconds
+# they need to boot. Everything that depends on them waits here first.
+set -uo pipefail
+
+ACME=http://localhost:8080/auth/realms/acme/.well-known/openid-configuration
+CONTOSO=http://localhost:8080/auth/realms/contoso-idp/.well-known/openid-configuration
+# No health endpoint is exposed; /mcp answering 401 (auth-enforced, not
+# connection-refused) is what proves the server is actually up.
+MCP=http://localhost:8090/mcp
+
+for _ in $(seq 1 90); do
+  # No MCP server on a public build (no MCP_IMAGE passed): report the same
+  # 401 a running server gives, so every readiness shape below is satisfied.
+  if [ -f /opt/mcp-app/quarkus-run.jar ]; then
+    mcp_status=$(curl -s -o /dev/null -w '%{http_code}' "$MCP" 2>/dev/null || echo 000)
+  else
+    mcp_status=401
+  fi
+  if curl -sf "$ACME" >/dev/null 2>&1 && curl -sf "$CONTOSO" >/dev/null 2>&1 \
+      && [ "$mcp_status" = "401" ]; then
+    if [ -f /opt/mcp-app/quarkus-run.jar ]; then
+      mcp_msg="mcp server ready on :8090"
+    else
+      mcp_msg="mcp server not built in (public build)"
+    fi
+    echo "keycloak ready on :8080/auth (acme, contoso-idp), $mcp_msg"
+    exit 0
+  fi
+  sleep 2
+done
+
+echo "services did not become ready within 180s" >&2
+exit 1

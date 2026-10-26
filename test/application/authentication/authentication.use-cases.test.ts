@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { AddFlowExecutionUseCase } from "../../../src/application/authentication/add-flow-execution.use-case.js";
+import { AddFlowSubFlowUseCase } from "../../../src/application/authentication/add-flow-subflow.use-case.js";
 import { BindRealmFlowUseCase } from "../../../src/application/authentication/bind-realm-flow.use-case.js";
 import { CopyAuthFlowUseCase } from "../../../src/application/authentication/copy-auth-flow.use-case.js";
+import { CreateAuthFlowUseCase } from "../../../src/application/authentication/create-auth-flow.use-case.js";
 import { DeleteFlowExecutionUseCase } from "../../../src/application/authentication/delete-flow-execution.use-case.js";
 import { ListAuthFlowsUseCase } from "../../../src/application/authentication/list-auth-flows.use-case.js";
 import { ListAuthenticatorProvidersUseCase } from "../../../src/application/authentication/list-authenticator-providers.use-case.js";
@@ -69,6 +71,18 @@ describe("authentication use cases", () => {
     expect(providers[0]?.id).toBe("auth-otp-form");
   });
 
+  it("creates an empty flow", async () => {
+    const repo = new InMemoryAuthenticationRepository();
+    await new CreateAuthFlowUseCase(repo).execute({
+      alias: "Passkey Only",
+      description: "passwordless",
+    });
+    expect(repo.created[0]).toEqual({
+      alias: "Passkey Only",
+      description: "passwordless",
+    });
+  });
+
   it("copies a flow", async () => {
     const repo = new InMemoryAuthenticationRepository([
       { id: "1", alias: "browser", builtIn: true },
@@ -104,6 +118,18 @@ describe("authentication use cases", () => {
     expect(repo.added[0]).toEqual({
       flowAlias: "browser-copy",
       providerId: "auth-otp-form",
+    });
+  });
+
+  it("adds a nested sub-flow", async () => {
+    const repo = new InMemoryAuthenticationRepository();
+    await new AddFlowSubFlowUseCase(repo).execute({
+      parentFlowAlias: "Passkey Only",
+      alias: "Passkey Only forms",
+    });
+    expect(repo.subFlows[0]).toEqual({
+      parentFlowAlias: "Passkey Only",
+      alias: "Passkey Only forms",
     });
   });
 

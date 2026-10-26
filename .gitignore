@@ -1,11 +1,12 @@
-# Internal working documents — never committed
-docs/plans/
-STATUS.md
+# Local SkillsBench / plan working docs are versioned under docs/plans/,
+# but job run artifacts (trajectories, LLM dumps) stay local only.
+docs/plans/benchmarks/jobs/
 
 # Dependencies & build output
 node_modules/
 dist/
 coverage/
+.cache/
 
 # Logs & packaged tarballs
 *.log

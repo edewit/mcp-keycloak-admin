@@ -28,6 +28,29 @@ describe("authentication tools", () => {
     ]);
   });
 
+  it("create flow and sub-flow handlers call the repository", async () => {
+    const repo = new InMemoryAuthenticationRepository();
+    const tools = buildAuthTools({
+      authenticationRepository: repo,
+      confirmers,
+    });
+    const create = tools.find(
+      (tool) => tool.name === "keycloak_auth_flow_create",
+    );
+    const subflow = tools.find(
+      (tool) => tool.name === "keycloak_auth_flow_subflow_add",
+    );
+
+    await create!.handler({ alias: "Passkey Only" });
+    await subflow!.handler({
+      parentFlowAlias: "Passkey Only",
+      alias: "Passkey Only forms",
+    });
+
+    expect(repo.created[0]?.alias).toBe("Passkey Only");
+    expect(repo.subFlows[0]?.alias).toBe("Passkey Only forms");
+  });
+
   it("set-enabled handler toggles a required action", async () => {
     const repo = new InMemoryAuthenticationRepository();
     const tools = buildAuthTools({

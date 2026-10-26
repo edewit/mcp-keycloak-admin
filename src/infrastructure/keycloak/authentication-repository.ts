@@ -79,6 +79,16 @@ export class KeycloakAuthenticationRepository implements AuthenticationRepositor
     }));
   }
 
+  async createFlow(alias: string, description?: string): Promise<void> {
+    await this.client.post("/authentication/flows", {
+      alias,
+      ...(description !== undefined ? { description } : {}),
+      providerId: "basic-flow",
+      topLevel: true,
+      builtIn: false,
+    });
+  }
+
   async copyFlow(flowAlias: string, newName: string): Promise<void> {
     await this.client.post(
       `/authentication/flows/${encodeURIComponent(flowAlias)}/copy`,
@@ -99,6 +109,22 @@ export class KeycloakAuthenticationRepository implements AuthenticationRepositor
     await this.client.post(
       `/authentication/flows/${encodeURIComponent(flowAlias)}/executions/execution`,
       { provider: providerId },
+    );
+  }
+
+  async addSubFlow(
+    parentFlowAlias: string,
+    alias: string,
+    description?: string,
+  ): Promise<void> {
+    await this.client.post(
+      `/authentication/flows/${encodeURIComponent(parentFlowAlias)}/executions/flow`,
+      {
+        alias,
+        ...(description !== undefined ? { description } : {}),
+        provider: "basic-flow",
+        type: "basic-flow",
+      },
     );
   }
 

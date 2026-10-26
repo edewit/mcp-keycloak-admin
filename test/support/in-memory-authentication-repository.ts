@@ -10,9 +10,15 @@ import type { AuthenticationRepository } from "../../src/domain/ports/authentica
 
 export class InMemoryAuthenticationRepository implements AuthenticationRepository {
   readonly toggled: { alias: string; enabled: boolean }[] = [];
+  readonly created: { alias: string; description?: string }[] = [];
   readonly copied: { flowAlias: string; newName: string }[] = [];
   readonly bound: { binding: RealmFlowBinding; flowAlias: string }[] = [];
   readonly added: { flowAlias: string; providerId: string }[] = [];
+  readonly subFlows: {
+    parentFlowAlias: string;
+    alias: string;
+    description?: string;
+  }[] = [];
   readonly updated: {
     flowAlias: string;
     executionId: string;
@@ -50,6 +56,20 @@ export class InMemoryAuthenticationRepository implements AuthenticationRepositor
     return Promise.resolve(this.providers);
   }
 
+  createFlow(alias: string, description?: string): Promise<void> {
+    this.created.push(
+      description === undefined ? { alias } : { alias, description },
+    );
+    this.flows.push({
+      id: `flow-${String(this.flows.length)}`,
+      alias,
+      builtIn: false,
+      topLevel: true,
+      ...(description !== undefined ? { description } : {}),
+    });
+    return Promise.resolve();
+  }
+
   copyFlow(flowAlias: string, newName: string): Promise<void> {
     this.copied.push({ flowAlias, newName });
     this.flows.push({ id: "copied", alias: newName, builtIn: false });
@@ -75,6 +95,38 @@ export class InMemoryAuthenticationRepository implements AuthenticationRepositor
       configurable: false,
     });
     this.executions.set(flowAlias, list);
+    return Promise.resolve();
+  }
+
+  addSubFlow(
+    parentFlowAlias: string,
+    alias: string,
+    description?: string,
+  ): Promise<void> {
+    this.subFlows.push(
+      description === undefined
+        ? { parentFlowAlias, alias }
+        : { parentFlowAlias, alias, description },
+    );
+    const list = this.executions.get(parentFlowAlias) ?? [];
+    list.push({
+      id: `sub-${String(list.length)}`,
+      displayName: alias,
+      requirement: "DISABLED",
+      index: list.length,
+      level: 0,
+      providerId: "",
+      authenticationFlow: true,
+      configurable: false,
+      flowId: `flow-${alias}`,
+    });
+    this.executions.set(parentFlowAlias, list);
+    this.flows.push({
+      id: `flow-${alias}`,
+      alias,
+      builtIn: false,
+      topLevel: false,
+    });
     return Promise.resolve();
   }
 

@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 import { AddFlowExecutionUseCase } from "../../application/authentication/add-flow-execution.use-case.js";
+import { AddFlowSubFlowUseCase } from "../../application/authentication/add-flow-subflow.use-case.js";
 import { BindRealmFlowUseCase } from "../../application/authentication/bind-realm-flow.use-case.js";
 import { CopyAuthFlowUseCase } from "../../application/authentication/copy-auth-flow.use-case.js";
+import { CreateAuthFlowUseCase } from "../../application/authentication/create-auth-flow.use-case.js";
 import { DeleteFlowExecutionUseCase } from "../../application/authentication/delete-flow-execution.use-case.js";
 import { ListAuthFlowsUseCase } from "../../application/authentication/list-auth-flows.use-case.js";
 import { ListAuthenticatorProvidersUseCase } from "../../application/authentication/list-authenticator-providers.use-case.js";
@@ -115,6 +117,42 @@ function listAuthenticatorProvidersTool(deps: AuthToolDeps): ToolDefinition {
   };
 }
 
+function createFlowTool(deps: AuthToolDeps): ToolDefinition {
+  return {
+    name: "keycloak_auth_flow_create",
+    title: "Create an empty authentication flow",
+    description:
+      "Creates a new empty top-level basic authentication flow (not a copy of browser). Use this when you need a clean shell — for example passkey-only login — then add executions and nested sub-flows. Write operation; not idempotent if the alias already exists. Verify with keycloak_auth_flows_list.",
+    level: ToolLevel.Write,
+    inputSchema: {
+      alias: z
+        .string()
+        .describe(
+          "Alias for the new top-level flow (for example 'Passkey Only'). Must not already exist. Required.",
+        ),
+      description: z
+        .string()
+        .optional()
+        .describe("Optional human-readable description for the flow."),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+    },
+    async handler(args) {
+      const alias = String(args.alias);
+      const description =
+        typeof args.description === "string" ? args.description : undefined;
+      await new CreateAuthFlowUseCase(deps.authenticationRepository).execute({
+        alias,
+        ...(description !== undefined ? { description } : {}),
+      });
+      return textResult(`Created authentication flow ${alias}.`);
+    },
+  };
+}
+
 function copyFlowTool(deps: AuthToolDeps): ToolDefinition {
   return {
     name: "keycloak_auth_flow_copy",
@@ -194,7 +232,7 @@ function addExecutionTool(deps: AuthToolDeps): ToolDefinition {
     name: "keycloak_auth_flow_execution_add",
     title: "Add an execution to an authentication flow",
     description:
-      "Adds an authenticator execution to a flow (or sub-flow) by provider id. Prefer copying a built-in flow first. Use keycloak_auth_authenticator_providers_list for valid provider ids, then keycloak_auth_flow_executions_list to verify. New executions often start DISABLED or ALTERNATIVE — set requirement with keycloak_auth_flow_execution_update.",
+      "Adds an authenticator execution to a flow (or sub-flow) by provider id. Prefer copying a built-in flow first, or keycloak_auth_flow_create for an empty shell. Use keycloak_auth_authenticator_providers_list for valid provider ids, then keycloak_auth_flow_executions_list to verify. New executions often start DISABLED or ALTERNATIVE — set requirement with keycloak_auth_flow_execution_update.",
     level: ToolLevel.Write,
     inputSchema: {
       flowAlias: z
@@ -222,6 +260,51 @@ function addExecutionTool(deps: AuthToolDeps): ToolDefinition {
       });
       return textResult(
         `Added execution ${providerId} to flow ${flowAlias}. Re-list executions to see its id and requirement.`,
+      );
+    },
+  };
+}
+
+function addSubFlowTool(deps: AuthToolDeps): ToolDefinition {
+  return {
+    name: "keycloak_auth_flow_subflow_add",
+    title: "Add a nested sub-flow",
+    description:
+      "Adds an empty nested basic sub-flow under a parent flow alias (POST .../executions/flow). Required for patterns where a REQUIRED authenticator must sit under an ALTERNATIVE bucket (for example cookie + forms). Write operation; not idempotent if the sub-flow alias already exists. Then add executions to the new sub-flow alias and set requirements with keycloak_auth_flow_execution_update.",
+    level: ToolLevel.Write,
+    inputSchema: {
+      parentFlowAlias: z
+        .string()
+        .describe(
+          "Alias of the parent flow that will contain the sub-flow. Required.",
+        ),
+      alias: z
+        .string()
+        .describe(
+          "Alias for the new nested sub-flow (for example 'Passkey Only forms'). Required.",
+        ),
+      description: z
+        .string()
+        .optional()
+        .describe("Optional human-readable description for the sub-flow."),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+    },
+    async handler(args) {
+      const parentFlowAlias = String(args.parentFlowAlias);
+      const alias = String(args.alias);
+      const description =
+        typeof args.description === "string" ? args.description : undefined;
+      await new AddFlowSubFlowUseCase(deps.authenticationRepository).execute({
+        parentFlowAlias,
+        alias,
+        ...(description !== undefined ? { description } : {}),
+      });
+      return textResult(
+        `Added sub-flow ${alias} under ${parentFlowAlias}. Re-list parent executions and set requirements.`,
       );
     },
   };
@@ -432,9 +515,11 @@ export function buildAuthTools(deps: AuthToolDeps): ToolDefinition[] {
     listFlowsTool(deps),
     listFlowExecutionsTool(deps),
     listAuthenticatorProvidersTool(deps),
+    createFlowTool(deps),
     copyFlowTool(deps),
     bindRealmFlowTool(deps),
     addExecutionTool(deps),
+    addSubFlowTool(deps),
     updateExecutionTool(deps),
     raiseExecutionPriorityTool(deps),
     lowerExecutionPriorityTool(deps),

@@ -202,9 +202,11 @@ Currently implemented:
 | `keycloak_auth_flows_list`                    | R     | List authentication flows.                                          |
 | `keycloak_auth_flow_executions_list`          | R     | List executions (steps) for one authentication flow.                |
 | `keycloak_auth_authenticator_providers_list`  | R     | List authenticator provider ids addable to a flow.                  |
+| `keycloak_auth_flow_create`                   | W     | Create an empty top-level authentication flow.                      |
 | `keycloak_auth_flow_copy`                     | W     | Copy an authentication flow to a new alias.                         |
 | `keycloak_auth_flow_bind`                     | W     | Bind a flow to a realm slot (browser, first broker login, …).       |
 | `keycloak_auth_flow_execution_add`            | W     | Add an authenticator execution to a flow.                           |
+| `keycloak_auth_flow_subflow_add`              | W     | Add a nested basic sub-flow under a parent flow.                    |
 | `keycloak_auth_flow_execution_update`         | W     | Update an execution requirement (REQUIRED/ALTERNATIVE/…).           |
 | `keycloak_auth_flow_execution_raise_priority` | W     | Move an execution earlier in its flow.                              |
 | `keycloak_auth_flow_execution_lower_priority` | W     | Move an execution later in its flow.                                |
@@ -216,11 +218,13 @@ Currently implemented:
 | `keycloak_authz_permissions_list`             | R     | List a client's authorization permissions.                          |
 | `keycloak_events_login`                       | R     | Read recent login events (filterable).                              |
 | `keycloak_events_admin`                       | R     | Read recent admin events.                                           |
-| `keycloak_realm_get_config`                   | R     | Read key realm configuration flags.                                 |
+| `keycloak_realm_get_config`                   | R     | Read key realm configuration flags (incl. SMTP / passkey policy).   |
+| `keycloak_realm_update`                       | W     | Update realm SMTP and/or WebAuthn passwordless policy.              |
 | `keycloak_server_info`                        | R     | Read the Keycloak server version.                                   |
 
 See [docs/users.md](docs/users.md), [docs/roles.md](docs/roles.md),
-[docs/clients.md](docs/clients.md), [docs/groups.md](docs/groups.md) and
+[docs/clients.md](docs/clients.md), [docs/groups.md](docs/groups.md),
+[docs/authentication.md](docs/authentication.md), and
 [docs/events-realm.md](docs/events-realm.md) for parameters and examples, and
 [docs/security.md](docs/security.md) for the safety model.
 
@@ -228,7 +232,7 @@ See [docs/users.md](docs/users.md), [docs/roles.md](docs/roles.md),
 
 The architecture is designed to keep growing as thin use cases + tools.
 Remaining candidates: authorization policy/permission CRUD and evaluation,
-creating nested sub-flows, and advanced federation and identity-provider
+realm attributes / ACR helpers, and advanced federation and identity-provider
 configuration. See [docs/development.md](docs/development.md) for how to add one.
 
 ## Development

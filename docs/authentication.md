@@ -21,6 +21,16 @@ List executions (steps) for one flow.
 
 List authenticator provider ids that can be added as executions. No parameters.
 
+## `keycloak_auth_flow_create` [W]
+
+Create an empty top-level basic flow (not a copy of `browser`). Use when you
+need a clean shell, then add executions / nested sub-flows.
+
+| Parameter     | Type   | Required | Description           |
+| ------------- | ------ | -------- | --------------------- |
+| `alias`       | string | yes      | New flow alias.       |
+| `description` | string | no       | Optional description. |
+
 ## `keycloak_auth_flow_copy` [W]
 
 Copy a flow to a new alias (`POST .../authentication/flows/{alias}/copy`).
@@ -48,6 +58,18 @@ Add an authenticator to a flow or sub-flow.
 | ------------ | ------ | -------- | -------------------------------------------------- |
 | `flowAlias`  | string | yes      | Flow or nested sub-flow alias.                     |
 | `providerId` | string | yes      | From `keycloak_auth_authenticator_providers_list`. |
+
+## `keycloak_auth_flow_subflow_add` [W]
+
+Add an empty nested basic sub-flow under a parent flow
+(`POST .../executions/flow`). Needed when a REQUIRED step must sit under an
+ALTERNATIVE bucket (cookie + forms).
+
+| Parameter         | Type   | Required | Description           |
+| ----------------- | ------ | -------- | --------------------- |
+| `parentFlowAlias` | string | yes      | Parent flow alias.    |
+| `alias`           | string | yes      | New sub-flow alias.   |
+| `description`     | string | no       | Optional description. |
 
 ## `keycloak_auth_flow_execution_update` [W]
 
