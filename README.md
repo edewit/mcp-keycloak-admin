@@ -37,9 +37,14 @@ npx -y mcp-keycloak-admin
 node dist/index.js
 ```
 
-Both need the env vars in [Configuration](#configuration). Without them the
-process exits with a config error; with them and no client attached, it idles
-on stdin until you Ctrl+C.
+Both need the env vars in [Configuration](#configuration). For a local
+checkout, put them in a `.env` file (see [`.env.example`](.env.example)) — the
+process loads that file automatically. `source .env` alone does **not** export
+into `node` (shell locals stay in the shell); use `set -a && source .env && set +a`
+or rely on the built-in `.env` load.
+
+Without the required vars the process exits with a config error; with them and
+no MCP client attached, it idles on stdin until you Ctrl+C.
 
 ## Why
 
