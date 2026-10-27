@@ -21,16 +21,25 @@ Compatible with **Keycloak 26.x** (validated against 26.0.5).
 
 ## Install
 
-No install needed — run it straight from npm with `npx`:
+This is an **MCP server**, not a CLI you interact with in a terminal. It speaks
+[Model Context Protocol](https://modelcontextprotocol.io) over **stdio**: your
+editor or agent (Cursor, Claude Desktop, …) starts the process, sends JSON-RPC
+on stdin, and calls the `keycloak_*` tools. If you run it by hand it will look
+“stuck” with no prompt — that means it is waiting for an MCP client.
+
+Wire it into a client (below), or for a local Keycloak walkthrough see the
+[Quickstart](docs/quickstart.md).
 
 ```bash
+# Started by the MCP client — not meant as an interactive shell command:
 npx -y mcp-keycloak-admin
+# or, from a git checkout after npm run build:
+node dist/index.js
 ```
 
-The server speaks MCP over stdio, so you normally wire it into an MCP client
-rather than running it by hand — see [Usage with an MCP client](#usage-with-an-mcp-client).
-New to it? The [Quickstart](docs/quickstart.md) spins up a local Keycloak and a
-client config in a couple of minutes.
+Both need the env vars in [Configuration](#configuration). Without them the
+process exits with a config error; with them and no client attached, it idles
+on stdin until you Ctrl+C.
 
 ## Why
 
@@ -60,9 +69,17 @@ does that with strong guardrails so destructive actions never happen silently.
 - Node.js >= 20
 - A reachable Keycloak 26.x server
 
-## Usage with an MCP client
+## Usage with an MCP client (LLM / IDE)
 
-Add the server to your MCP client configuration:
+The LLM does not “run Keycloak” itself — the MCP **client** launches this
+server as a subprocess and exposes its tools to the model. Add an entry like
+the one below, then ask the assistant things like “list users in this realm” or
+“show the browser authentication flow”.
+
+### Cursor
+
+User config `~/.cursor/mcp.json` or a project `.cursor/mcp.json` (gitignored if
+it holds secrets):
 
 ```json
 {
@@ -81,6 +98,43 @@ Add the server to your MCP client configuration:
   }
 }
 ```
+
+To use **this fork** (auth-flow / realm tools ahead of npm), build once and point
+at `dist`:
+
+```json
+{
+  "mcpServers": {
+    "keycloak": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-keycloak-admin/dist/index.js"],
+      "env": {
+        "KEYCLOAK_BASE_URL": "http://localhost:8080",
+        "KEYCLOAK_REALM": "master",
+        "AUTH_MODE": "password",
+        "KC_ADMIN_USERNAME": "admin",
+        "KC_ADMIN_PASSWORD": "admin",
+        "KC_ADMIN_REALM": "master"
+      }
+    }
+  }
+}
+```
+
+More detail (skill pack symlink, roles): [docs/cursor-local.md](docs/cursor-local.md).
+
+### Claude Desktop
+
+Edit the app’s MCP config (macOS:
+`~/Library/Application Support/Claude/claude_desktop_config.json`) with the same
+`mcpServers` shape as Cursor (`command` / `args` / `env`). Restart Claude Desktop
+after saving.
+
+### Other MCP hosts
+
+Any client that supports **stdio MCP servers** works the same way: set
+`command` + `args` + `env`, enable the server, then use tools from the chat UI.
+Smoke-test with `keycloak_server_info` or `keycloak_user_search`.
 
 See [docs/setup-keycloak.md](docs/setup-keycloak.md) to create the `mcp-admin`
 client and grant it the least-privilege roles it needs.

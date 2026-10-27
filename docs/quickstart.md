@@ -23,6 +23,10 @@ docker compose up -d
 
 ## 2. Point an MCP client at the server
 
+Do **not** expect a welcome banner from `npx mcp-keycloak-admin` or
+`node dist/index.js` — the process speaks MCP over stdio and waits for a client.
+Configure Cursor / Claude Desktop / another MCP host instead (see the README).
+
 For a quick local try you can use the admin user directly (use a service account
 in production — see [setup-keycloak.md](setup-keycloak.md)):
 
