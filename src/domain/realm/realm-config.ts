@@ -20,11 +20,15 @@ export interface WebAuthnPasswordlessPolicy {
   readonly rpId?: string;
   readonly requireResidentKey?: "Yes" | "No";
   readonly userVerificationRequirement?:
-    "required" | "preferred" | "discouraged";
+    | "required"
+    | "preferred"
+    | "discouraged";
 }
 
 /** Allowlisted realm write patch — always applied via read-merge-write. */
 export interface RealmConfigPatch {
   readonly smtpServer?: SmtpServerConfig;
   readonly webAuthnPasswordlessPolicy?: WebAuthnPasswordlessPolicy;
+  /** Stock Keycloak Organizations feature flag (required for domain routing). */
+  readonly organizationsEnabled?: boolean;
 }

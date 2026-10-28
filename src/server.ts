@@ -18,6 +18,7 @@ import { KeycloakEventLog } from "./infrastructure/keycloak/event-log.js";
 import { KeycloakFederationRepository } from "./infrastructure/keycloak/federation-repository.js";
 import { KeycloakGroupRepository } from "./infrastructure/keycloak/group-repository.js";
 import { KeycloakIdentityProviderRepository } from "./infrastructure/keycloak/identity-provider-repository.js";
+import { KeycloakOrganizationRepository } from "./infrastructure/keycloak/organization-repository.js";
 import { KeycloakRealmInfo } from "./infrastructure/keycloak/realm-info.js";
 import { KeycloakRoleRepository } from "./infrastructure/keycloak/role-repository.js";
 import { KeycloakUserRepository } from "./infrastructure/keycloak/user-repository.js";
@@ -30,6 +31,7 @@ import { buildEventRealmTools } from "./infrastructure/mcp/event-realm-tools.js"
 import { buildFederationTools } from "./infrastructure/mcp/federation-tools.js";
 import { buildGroupTools } from "./infrastructure/mcp/group-tools.js";
 import { buildIdpTools } from "./infrastructure/mcp/idp-tools.js";
+import { buildOrgTools } from "./infrastructure/mcp/org-tools.js";
 import { buildRoleTools } from "./infrastructure/mcp/role-tools.js";
 import {
   filterTools,
@@ -90,6 +92,7 @@ export function createServer(config: AppConfig): McpServer {
   const identityProviderRepository = new KeycloakIdentityProviderRepository(
     client,
   );
+  const organizationRepository = new KeycloakOrganizationRepository(client);
   const federationRepository = new KeycloakFederationRepository(client);
   const authenticationRepository = new KeycloakAuthenticationRepository(client);
   const authorizationRepository = new KeycloakAuthorizationRepository(client);
@@ -107,6 +110,7 @@ export function createServer(config: AppConfig): McpServer {
       }),
       ...buildGroupTools({ groupRepository, roleRepository, confirmers }),
       ...buildIdpTools({ identityProviderRepository, confirmers }),
+      ...buildOrgTools({ organizationRepository, confirmers }),
       ...buildFederationTools({ federationRepository }),
       ...buildAuthTools({ authenticationRepository, confirmers }),
       ...buildAuthzTools({ clientRepository, authorizationRepository }),

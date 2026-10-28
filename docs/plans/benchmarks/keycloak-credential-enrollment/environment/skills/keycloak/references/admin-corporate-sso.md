@@ -4,7 +4,7 @@
   (plugins/phasetwo/skills/keycloak/references/admin-corporate-sso.md
    and benchmarks/keycloak-corporate-sso-login REST recipe)
   Licensed under CC BY-SA 4.0. Changes were made: stock Organizations path;
-  MCP gaps; concrete Admin REST stages for SkillsBench.
+  MCP tool preference; concrete stages for SkillsBench.
 -->
 
 # Corporate SSO by email domain
@@ -31,11 +31,24 @@ Phase Two `keycloak-orgs` (`/realms/{realm}/orgs`, `ext-auth-home-idp-discovery`
 
 ## Tools
 
-- IdP: `keycloak_idp_create` / `_get` / `_list` when MCP exists  
-- Organizations / realm flag: **MCP gap** → Admin REST  
-- Sandbox: `/root/admin_credentials.txt` + often `/root/corporate_idp_details.txt`
+Prefer MCP (when attached):
 
-## Steps (Admin REST)
+- Realm flag: `keycloak_realm_update` (`organizationsEnabled: true`) → verify `keycloak_realm_get_config`
+- IdP: `keycloak_idp_create` / `_get` / `_list`
+- Org: `keycloak_org_create` / `_get` / `_list`
+- Link: `keycloak_org_idp_link` → verify `keycloak_org_idp_list`
+
+Sandbox credentials: `/root/admin_credentials.txt` + often `/root/corporate_idp_details.txt`.
+
+## Steps
+
+1. **Enable orgs** — `keycloak_realm_update` with `organizationsEnabled: true` → confirm via `keycloak_realm_get_config`.
+2. **Create OIDC IdP** — `keycloak_idp_create` from customer details (`providerId: "oidc"`, endpoints, client id/secret). Prefer `trustEmail` in config when the customer vouches for emails (`"trustEmail": "true"` if the tool config map is stringly; otherwise create via REST with boolean `trustEmail: true` if MCP config cannot set top-level IdP flags).
+3. **Create organization** — `keycloak_org_create` with `name` and `domains: [{ name: "<customer-domain>", verified: true }]`. Keep the returned `id`.
+4. **Link IdP** — `keycloak_org_idp_link` with `organizationId` and `idpAlias`. Confirm with `keycloak_org_idp_list`.
+5. Confirm browser flow still allows password for non-matching domains (no blanket redirector).
+
+### Admin REST fallback (MCP gap / no tools)
 
 ```bash
 BASE=…   # e.g. http://localhost:8080/auth
@@ -43,17 +56,16 @@ H="Authorization: Bearer $ADMIN_TOKEN"
 REALM=acme
 ```
 
-1. **Enable orgs** — GET realm → set `organizationsEnabled: true` → PUT full representation → confirm it stuck.
-2. **Create OIDC IdP** from customer details (`providerId: "oidc"`, endpoints, client id/secret). Prefer `trustEmail: true` so first login is not stalled on email verify.
-3. **Create organization** — `POST .../organizations` with name; add customer email domain with `verified: true`.
-4. **Link IdP** — `POST .../organizations/{orgId}/identity-providers` with body = JSON string of the IdP alias (bare string, not an object).
-5. Confirm browser flow still allows password for non-matching domains (no blanket redirector).
+1. GET realm → set `organizationsEnabled: true` → PUT full representation.
+2. `POST .../identity-provider/instances` for the OIDC IdP.
+3. `POST .../organizations` with name + `domains: [{ name, verified: true }]`.
+4. `POST .../organizations/{orgId}/identity-providers` with body = JSON string of the IdP alias (bare string, not an object).
 
 ## Verify
 
 - `@customer.example` → IdP (no password form).  
 - Internal user → password form.  
-- Re-GET: orgs enabled, domain verified, IdP listed under the org.
+- Re-read: `organizationsEnabled`, domain verified on the org, IdP listed under the org.
 
 ## Traps
 

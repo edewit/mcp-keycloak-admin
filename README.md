@@ -261,6 +261,13 @@ Currently implemented:
 | `keycloak_idp_mappers_list`                   | R     | List an identity provider's mappers.                                |
 | `keycloak_idp_create`                         | W     | Create an identity provider.                                        |
 | `keycloak_idp_delete`                         | D     | Delete an identity provider.                                        |
+| `keycloak_org_list`                           | R     | List stock Keycloak Organizations.                                  |
+| `keycloak_org_get`                            | R     | Fetch an organization by UUID.                                      |
+| `keycloak_org_create`                         | W     | Create an organization with email domains.                          |
+| `keycloak_org_delete`                         | D     | Delete an organization.                                             |
+| `keycloak_org_idp_list`                       | R     | List IdPs linked to an organization.                                |
+| `keycloak_org_idp_link`                       | W     | Link an IdP to an organization (domain routing).                    |
+| `keycloak_org_idp_unlink`                     | D     | Unlink an IdP from an organization.                                 |
 | `keycloak_federation_list`                    | R     | List user federation (LDAP/Kerberos) providers.                     |
 | `keycloak_federation_get`                     | R     | Fetch a federation provider by id.                                  |
 | `keycloak_federation_sync`                    | W     | Trigger a user sync (full or changed).                              |
@@ -283,13 +290,14 @@ Currently implemented:
 | `keycloak_authz_permissions_list`             | R     | List a client's authorization permissions.                          |
 | `keycloak_events_login`                       | R     | Read recent login events (filterable).                              |
 | `keycloak_events_admin`                       | R     | Read recent admin events.                                           |
-| `keycloak_realm_get_config`                   | R     | Read key realm configuration flags (incl. SMTP / passkey policy).   |
-| `keycloak_realm_update`                       | W     | Update realm SMTP and/or WebAuthn passwordless policy.              |
+| `keycloak_realm_get_config`                   | R     | Read key realm configuration flags (incl. SMTP / passkey / orgs).   |
+| `keycloak_realm_update`                       | W     | Update realm SMTP, WebAuthn passwordless, and/or organizations.     |
 | `keycloak_server_info`                        | R     | Read the Keycloak server version.                                   |
 
 See [docs/users.md](docs/users.md), [docs/roles.md](docs/roles.md),
 [docs/clients.md](docs/clients.md), [docs/groups.md](docs/groups.md),
-[docs/authentication.md](docs/authentication.md), and
+[docs/authentication.md](docs/authentication.md),
+[docs/organizations.md](docs/organizations.md), and
 [docs/events-realm.md](docs/events-realm.md) for parameters and examples, and
 [docs/security.md](docs/security.md) for the safety model.
 
@@ -297,7 +305,7 @@ See [docs/users.md](docs/users.md), [docs/roles.md](docs/roles.md),
 
 The architecture is designed to keep growing as thin use cases + tools.
 Remaining candidates: authorization policy/permission CRUD and evaluation,
-realm attributes / ACR helpers, live integration tests for auth/realm
+realm attributes / ACR helpers, live integration tests for auth/realm/org
 mutation, and advanced federation and identity-provider configuration.
 Working checklist: [docs/plans/STATUS.md](docs/plans/STATUS.md). How to add a
 tool: [docs/development.md](docs/development.md).

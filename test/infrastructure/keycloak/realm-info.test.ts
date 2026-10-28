@@ -68,4 +68,18 @@ describe("KeycloakRealmInfo", () => {
       '"webAuthnPolicyPasswordlessRequireResidentKey":"Yes"',
     );
   });
+
+  it("updates organizationsEnabled via GET then PUT merge", async () => {
+    const { realm, fetch } = makeRealm([
+      jsonResponse({
+        realm: "demo-realm",
+        enabled: true,
+        browserFlow: "browser",
+      }),
+      new Response(null, { status: 204 }),
+    ]);
+    await realm.updateRealmConfig({ organizationsEnabled: true });
+    expect(fetch.requests[1]?.body).toContain('"organizationsEnabled":true');
+    expect(fetch.requests[1]?.body).toContain('"browserFlow":"browser"');
+  });
 });

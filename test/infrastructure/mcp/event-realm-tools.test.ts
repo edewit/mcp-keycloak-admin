@@ -90,6 +90,20 @@ describe("event & realm tools", () => {
     expect(patches[0]?.webAuthnPasswordlessPolicy?.rpId).toBe("localhost");
   });
 
+  it("realm update tool sets organizationsEnabled", async () => {
+    const patches: RealmConfigPatch[] = [];
+    const tools = buildEventRealmTools({
+      eventLog,
+      realmInfo: makeRealmInfo(patches),
+    });
+    const tool = tools.find(
+      (candidate) => candidate.name === "keycloak_realm_update",
+    );
+    const result = await tool!.handler({ organizationsEnabled: true });
+    expect(result.content[0]?.text).toContain("organizationsEnabled");
+    expect(patches[0]?.organizationsEnabled).toBe(true);
+  });
+
   it("server info tool returns the Keycloak version", async () => {
     const tools = buildEventRealmTools({
       eventLog,
