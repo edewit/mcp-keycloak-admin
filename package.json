@@ -1,20 +1,23 @@
 {
-  "name": "mcp-keycloak-admin",
+  "name": "@edewit/mcp-keycloak-admin",
   "version": "0.2.3",
   "description": "Model Context Protocol server to administer Keycloak through its Admin REST API",
   "license": "MIT",
-  "mcpName": "io.github.mrz1880/mcp-keycloak-admin",
+  "mcpName": "io.github.edewit/mcp-keycloak-admin",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mrz1880/mcp-keycloak-admin.git"
+    "url": "git+https://github.com/edewit/mcp-keycloak-admin.git"
   },
   "bugs": {
-    "url": "https://github.com/mrz1880/mcp-keycloak-admin/issues"
+    "url": "https://github.com/edewit/mcp-keycloak-admin/issues"
   },
-  "homepage": "https://github.com/mrz1880/mcp-keycloak-admin#readme",
+  "homepage": "https://github.com/edewit/mcp-keycloak-admin#readme",
   "bin": {
     "mcp-keycloak-admin": "dist/index.js"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "files": [
     "dist",

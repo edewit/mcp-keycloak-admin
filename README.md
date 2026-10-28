@@ -1,6 +1,6 @@
-# mcp-keycloak-admin
+# @edewit/mcp-keycloak-admin
 
-[![npm version](https://img.shields.io/npm/v/mcp-keycloak-admin.svg)](https://www.npmjs.com/package/mcp-keycloak-admin)
+[![npm version](https://img.shields.io/npm/v/@edewit/mcp-keycloak-admin.svg)](https://www.npmjs.com/package/@edewit/mcp-keycloak-admin)
 [![CI](https://github.com/edewit/mcp-keycloak-admin/actions/workflows/ci.yml/badge.svg)](https://github.com/edewit/mcp-keycloak-admin/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/edewit/mcp-keycloak-admin/actions/workflows/codeql.yml/badge.svg)](https://github.com/edewit/mcp-keycloak-admin/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -12,12 +12,11 @@ architecture.
 
 Compatible with **Keycloak 26.x** (validated against 26.0.5).
 
-> **This repository** ([edewit/mcp-keycloak-admin](https://github.com/edewit/mcp-keycloak-admin))
-> is the maintained line for auth-flow mutation, realm SMTP/WebAuthn updates,
-> and the agent skill + SkillsBench pack under [`docs/plans/`](docs/plans/).
-> The npm package name may still resolve to the upstream release until published
-> from here — for Cursor, point MCP at a local `npm run build` checkout (see
-> [docs/cursor-local.md](docs/cursor-local.md)).
+Fork of [mrz1880/mcp-keycloak-admin](https://github.com/mrz1880/mcp-keycloak-admin)
+with auth-flow mutation, realm SMTP/WebAuthn updates, and an agent skill +
+SkillsBench pack under [`docs/plans/`](docs/plans/). Published as
+**`@edewit/mcp-keycloak-admin`** (the unscoped `mcp-keycloak-admin` on npm is
+the upstream package and may lag this fork).
 
 ## Install
 
@@ -32,7 +31,7 @@ Wire it into a client (below), or for a local Keycloak walkthrough see the
 
 ```bash
 # Started by the MCP client — not meant as an interactive shell command:
-npx -y mcp-keycloak-admin
+npx -y @edewit/mcp-keycloak-admin
 # or, from a git checkout after npm run build:
 node dist/index.js
 ```
@@ -91,7 +90,7 @@ it holds secrets):
   "mcpServers": {
     "keycloak-admin": {
       "command": "npx",
-      "args": ["-y", "mcp-keycloak-admin"],
+      "args": ["-y", "@edewit/mcp-keycloak-admin"],
       "env": {
         "KEYCLOAK_BASE_URL": "http://localhost:8080",
         "KEYCLOAK_REALM": "demo-realm",
@@ -104,8 +103,8 @@ it holds secrets):
 }
 ```
 
-To use **this fork** (auth-flow / realm tools ahead of npm), build once and point
-at `dist`:
+From a git checkout (before/without npm publish), build once and point at
+`dist`:
 
 ```json
 {
@@ -155,7 +154,7 @@ isolated, with its own credentials and guardrails:
   "mcpServers": {
     "kc-preprod": {
       "command": "npx",
-      "args": ["-y", "mcp-keycloak-admin"],
+      "args": ["-y", "@edewit/mcp-keycloak-admin"],
       "env": {
         "KEYCLOAK_BASE_URL": "https://preprod.example.com",
         "KEYCLOAK_REALM": "preprod-realm",
@@ -167,7 +166,7 @@ isolated, with its own credentials and guardrails:
     },
     "kc-prod": {
       "command": "npx",
-      "args": ["-y", "mcp-keycloak-admin"],
+      "args": ["-y", "@edewit/mcp-keycloak-admin"],
       "env": {
         "KEYCLOAK_BASE_URL": "https://auth.example.com",
         "KEYCLOAK_REALM": "prod-realm",
@@ -214,8 +213,8 @@ Currently implemented:
 
 > **Note:** this table tracks the `main` branch, which can run ahead of the
 > latest npm release shown by the version badge above. To confirm what's
-> available in your install, check `npm view mcp-keycloak-admin version` and pin
-> `mcp-keycloak-admin@latest`.
+> available in your install, check `npm view @edewit/mcp-keycloak-admin version`
+> and pin `@edewit/mcp-keycloak-admin@latest`.
 
 | Tool                                          | Level | Description                                                         |
 | --------------------------------------------- | ----- | ------------------------------------------------------------------- |

@@ -110,7 +110,7 @@ RUN case "${TARGETARCH}" in \
     rm /tmp/node.tar.gz
 COPY mcp-keycloak-admin/ /opt/mcp-keycloak-admin/
 WORKDIR /opt/mcp-keycloak-admin
-RUN npm ci --omit=dev --ignore-scripts && \
+RUN npm ci --omit=dev --ignore-scripts --legacy-peer-deps && \
     printf '#!/bin/sh\nexec node /opt/mcp-keycloak-admin/dist/index.js "$@"\n' \
       > /usr/local/bin/mcp-keycloak-admin && \
     chmod +x /usr/local/bin/mcp-keycloak-admin

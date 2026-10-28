@@ -8,8 +8,10 @@ attestations are generated automatically.
 
 - **Trusted Publishing (OIDC) — preferred, no secret.** Once the trusted
   publisher is configured on npm (package → _Settings → Trusted publishing →
-  GitHub Actions_, repository `mrz1880/mcp-keycloak-admin`, workflow
+  GitHub Actions_, repository `edewit/mcp-keycloak-admin`, workflow
   `release.yml`), the workflow authenticates via short-lived OIDC credentials.
+  Create the scoped package `@edewit/mcp-keycloak-admin` on npm first (or
+  bootstrap with `NPM_TOKEN`).
 - **`NPM_TOKEN` bootstrap fallback.** If an `NPM_TOKEN` repo secret is set
   (granular token, Read + write, **Bypass 2FA** enabled), the workflow publishes
   with it instead. This is only needed for the very first publish, before the
@@ -53,7 +55,7 @@ The workflow auto-selects the path based on whether `NPM_TOKEN` is present.
 
    ```bash
    gh run watch --workflow=release.yml
-   npm view mcp-keycloak-admin version
+   npm view @edewit/mcp-keycloak-admin version
    ```
 
 6. Publish the GitHub release notes:

@@ -44,8 +44,9 @@ the `mcp-admin` client exists.
 
 Rebuild after pulling: `npm run build`.
 
-Published `npx mcp-keycloak-admin` still tracks the upstream npm package and may
-lag this fork until you publish from here.
+Prefer `npx -y @edewit/mcp-keycloak-admin` once published. Until then, use the
+local `dist/index.js` path above. The unscoped `mcp-keycloak-admin` on npm is
+the upstream package and may lag this fork.
 
 ## 3. Skill pack
 

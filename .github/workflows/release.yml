@@ -6,10 +6,10 @@ on:
       - "v*"
 
 # Publishes to npm via Trusted Publishing (OIDC) — no secret needed.
-# Configured on npmjs.com: package mcp-keycloak-admin → Settings → Trusted
-# publishing → GitHub Actions, repo mrz1880/mcp-keycloak-admin, workflow
+# Configured on npmjs.com: package @edewit/mcp-keycloak-admin → Settings →
+# Trusted publishing → GitHub Actions, repo edewit/mcp-keycloak-admin, workflow
 # release.yml. Requires npm >= 11.5.1 (bundled with Node 24) and provenance is
-# generated automatically.
+# generated automatically. First publish may need NPM_TOKEN bootstrap.
 permissions:
   id-token: write
   # write is needed for the final step to create the GitHub Release.
