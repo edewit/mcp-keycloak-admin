@@ -30,6 +30,7 @@ const REALM_FIELDS = [
   "ssoSessionIdleTimeout",
   "ssoSessionMaxLifespan",
   "browserFlow",
+  "organizationsEnabled",
   "webAuthnPolicyPasswordlessRpEntityName",
   "webAuthnPolicyPasswordlessRpId",
   "webAuthnPolicyPasswordlessRequireResidentKey",
@@ -218,7 +219,7 @@ function realmConfigTool(deps: EventRealmToolDeps): ToolDefinition {
     name: "keycloak_realm_get_config",
     title: "Get realm configuration",
     description:
-      "Read-only. Returns a curated subset of the realm's configuration as a JSON object: registration/password-reset flags, email verification, brute-force and SSL settings, token/SSO lifespans, browserFlow, WebAuthn passwordless policy fields, and a redacted smtp summary (host/from/flags, hasPassword — never the password). Use after keycloak_realm_update to verify. Takes no parameters.",
+      "Read-only. Returns a curated subset of the realm's configuration as a JSON object: registration/password-reset flags, email verification, brute-force and SSL settings, token/SSO lifespans, browserFlow, organizationsEnabled, WebAuthn passwordless policy fields, and a redacted smtp summary (host/from/flags, hasPassword — never the password). Use after keycloak_realm_update to verify. Takes no parameters.",
     level: ToolLevel.Read,
     inputSchema: {},
     annotations: READ_ANNOTATIONS,
@@ -237,13 +238,19 @@ function realmConfigTool(deps: EventRealmToolDeps): ToolDefinition {
 function updateRealmConfigTool(deps: EventRealmToolDeps): ToolDefinition {
   return {
     name: "keycloak_realm_update",
-    title: "Update realm SMTP or WebAuthn passwordless policy",
+    title: "Update realm SMTP, WebAuthn passwordless, or organizations flag",
     description:
-      "Write. Read-merge-writes the realm representation so omitted fields are not blanked. Provide smtpServer and/or webAuthnPasswordlessPolicy (at least one required). smtpServer replaces the whole SMTP map; passwordless policy sets only webAuthnPolicyPasswordless* fields (not 2FA WebAuthn). Verify with keycloak_realm_get_config.",
+      "Write. Read-merge-writes the realm representation so omitted fields are not blanked. Provide smtpServer, webAuthnPasswordlessPolicy, and/or organizationsEnabled (at least one required). smtpServer replaces the whole SMTP map; passwordless policy sets only webAuthnPolicyPasswordless* fields (not 2FA WebAuthn); organizationsEnabled turns on stock Organizations for domain-based SSO. Verify with keycloak_realm_get_config.",
     level: ToolLevel.Write,
     inputSchema: {
       smtpServer: smtpServerSchema.optional(),
       webAuthnPasswordlessPolicy: webAuthnPasswordlessPolicySchema.optional(),
+      organizationsEnabled: z
+        .boolean()
+        .optional()
+        .describe(
+          "Enable stock Keycloak Organizations (required for email-domain IdP routing). Prefer true before keycloak_org_create.",
+        ),
     },
     annotations: {
       readOnlyHint: false,
@@ -276,7 +283,9 @@ function updateRealmConfigTool(deps: EventRealmToolDeps): ToolDefinition {
               rpId?: string;
               requireResidentKey?: "Yes" | "No";
               userVerificationRequirement?:
-                "required" | "preferred" | "discouraged";
+                | "required"
+                | "preferred"
+                | "discouraged";
             })
           : undefined;
 
@@ -340,6 +349,9 @@ function updateRealmConfigTool(deps: EventRealmToolDeps): ToolDefinition {
               },
             }
           : {}),
+        ...(typeof args.organizationsEnabled === "boolean"
+          ? { organizationsEnabled: args.organizationsEnabled }
+          : {}),
       };
       await new UpdateRealmConfigUseCase(deps.realmInfo).execute(patch);
       const parts: string[] = [];
@@ -348,6 +360,9 @@ function updateRealmConfigTool(deps: EventRealmToolDeps): ToolDefinition {
       }
       if (patch.webAuthnPasswordlessPolicy !== undefined) {
         parts.push("webAuthnPasswordlessPolicy");
+      }
+      if (patch.organizationsEnabled !== undefined) {
+        parts.push("organizationsEnabled");
       }
       return textResult(
         `Updated realm ${parts.join(" and ")}. Re-read with keycloak_realm_get_config.`,

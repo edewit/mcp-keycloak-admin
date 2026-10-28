@@ -85,6 +85,9 @@ export class KeycloakRealmInfo implements RealmInfo {
     if (patch.webAuthnPasswordlessPolicy !== undefined) {
       applyPasswordlessPolicy(merged, patch.webAuthnPasswordlessPolicy);
     }
+    if (patch.organizationsEnabled !== undefined) {
+      merged.organizationsEnabled = patch.organizationsEnabled;
+    }
     await this.client.put("", merged);
   }
 
