@@ -3,6 +3,7 @@ import type { Password } from "../shared/password.js";
 import { UserId } from "../shared/user-id.js";
 import type { NewUser } from "../user/new-user.js";
 import type { User } from "../user/user.js";
+import type { UserCredential } from "../user/user-credential.js";
 import type { UserSearchCriteria } from "../user/user-search-criteria.js";
 import type { UserSession } from "../user/user-session.js";
 import type { UserUpdate } from "../user/user-update.js";
@@ -19,6 +20,7 @@ export interface UserRepository {
     temporary: boolean,
   ): Promise<void>;
   sendActionsEmail(id: UserId, actions: ActionEmailType[]): Promise<void>;
+  listCredentials(id: UserId): Promise<UserCredential[]>;
   listSessions(id: UserId): Promise<UserSession[]>;
   logout(id: UserId): Promise<void>;
   delete(id: UserId): Promise<void>;

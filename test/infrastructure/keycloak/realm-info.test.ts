@@ -82,4 +82,20 @@ describe("KeycloakRealmInfo", () => {
     expect(fetch.requests[1]?.body).toContain('"organizationsEnabled":true');
     expect(fetch.requests[1]?.body).toContain('"browserFlow":"browser"');
   });
+
+  it("writes acr.loa.map into realm attributes", async () => {
+    const { realm, fetch } = makeRealm([
+      jsonResponse({
+        realm: "demo-realm",
+        attributes: { other: "x" },
+      }),
+      new Response(null, { status: 204 }),
+    ]);
+    await realm.updateRealmConfig({
+      acrLoaMap: { copper: 0, silver: 1, gold: 2 },
+    });
+    expect(fetch.requests[1]?.body).toContain('"other":"x"');
+    expect(fetch.requests[1]?.body).toContain('"acr.loa.map"');
+    expect(fetch.requests[1]?.body).toContain("gold");
+  });
 });

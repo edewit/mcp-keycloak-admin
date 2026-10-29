@@ -14,10 +14,30 @@ interface KeycloakClientRep {
   readonly clientId: string;
   readonly enabled?: boolean;
   readonly publicClient?: boolean;
+  readonly redirectUris?: string[];
+  readonly webOrigins?: string[];
+  readonly attributes?: Record<string, string>;
+  readonly authenticationFlowBindingOverrides?: Record<string, string>;
+  readonly [key: string]: unknown;
 }
 
 interface SecretRep {
   readonly value: string;
+}
+
+function stringMap(
+  value: Record<string, string> | undefined,
+): Record<string, string> {
+  if (value === undefined) {
+    return {};
+  }
+  const out: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry === "string") {
+      out[key] = entry;
+    }
+  }
+  return out;
 }
 
 function toSummary(raw: KeycloakClientRep): ClientSummary {
@@ -26,6 +46,12 @@ function toSummary(raw: KeycloakClientRep): ClientSummary {
     clientId: ClientId.fromString(raw.clientId),
     enabled: raw.enabled ?? false,
     publicClient: raw.publicClient ?? false,
+    redirectUris: raw.redirectUris ?? [],
+    webOrigins: raw.webOrigins ?? [],
+    attributes: stringMap(raw.attributes),
+    authenticationFlowBindingOverrides: stringMap(
+      raw.authenticationFlowBindingOverrides,
+    ),
   };
 }
 
@@ -69,21 +95,46 @@ export class KeycloakClientRepository implements ClientRepository {
     });
   }
 
-  update(uuid: ClientUuid, changes: ClientUpdate): Promise<void> {
-    const body: Record<string, unknown> = {};
+  async update(uuid: ClientUuid, changes: ClientUpdate): Promise<void> {
+    // Keycloak client PUT blanks omitted fields — always read-merge-write.
+    const current = await this.client.getJson<KeycloakClientRep>(
+      `/clients/${uuid.toString()}`,
+    );
+    const merged: Record<string, unknown> = { ...current };
     if (changes.enabled !== undefined) {
-      body.enabled = changes.enabled;
+      merged.enabled = changes.enabled;
     }
     if (changes.publicClient !== undefined) {
-      body.publicClient = changes.publicClient;
+      merged.publicClient = changes.publicClient;
     }
     if (changes.redirectUris !== undefined) {
-      body.redirectUris = changes.redirectUris;
+      merged.redirectUris = changes.redirectUris;
     }
     if (changes.webOrigins !== undefined) {
-      body.webOrigins = changes.webOrigins;
+      merged.webOrigins = changes.webOrigins;
     }
-    return this.client.put(`/clients/${uuid.toString()}`, body);
+    if (changes.attributes !== undefined) {
+      merged.attributes = {
+        ...stringMap(current.attributes),
+        ...changes.attributes,
+      };
+    }
+    if (changes.authenticationFlowBindingOverrides !== undefined) {
+      const overrides = {
+        ...stringMap(current.authenticationFlowBindingOverrides),
+      };
+      for (const [key, value] of Object.entries(
+        changes.authenticationFlowBindingOverrides,
+      )) {
+        if (value === "") {
+          delete overrides[key];
+        } else {
+          overrides[key] = value;
+        }
+      }
+      merged.authenticationFlowBindingOverrides = overrides;
+    }
+    await this.client.put(`/clients/${uuid.toString()}`, merged);
   }
 
   delete(uuid: ClientUuid): Promise<void> {

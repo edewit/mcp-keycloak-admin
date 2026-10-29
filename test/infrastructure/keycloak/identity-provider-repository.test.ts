@@ -41,11 +41,35 @@ describe("KeycloakIdentityProviderRepository", () => {
       alias: IdpAlias.fromString("google"),
       providerId: "oidc",
       enabled: true,
+      trustEmail: true,
+      displayName: "Google",
       config: { clientId: "x" },
     });
     expect(fetch.requests[0]?.method).toBe("POST");
     expect(fetch.requests[0]?.url).toContain("/identity-provider/instances");
     expect(fetch.requests[0]?.body).toContain('"alias":"google"');
+    expect(fetch.requests[0]?.body).toContain('"trustEmail":true');
+  });
+
+  it("updates an identity provider via GET then PUT merge", async () => {
+    const { repo, fetch } = makeRepo([
+      jsonResponse({
+        alias: "google",
+        providerId: "oidc",
+        enabled: true,
+        config: { clientId: "old" },
+      }),
+      new Response(null, { status: 204 }),
+    ]);
+    await repo.update(IdpAlias.fromString("google"), {
+      trustEmail: true,
+      config: { clientSecret: "s" },
+    });
+    expect(fetch.requests[0]?.method).toBe("GET");
+    expect(fetch.requests[1]?.method).toBe("PUT");
+    expect(fetch.requests[1]?.body).toContain('"trustEmail":true');
+    expect(fetch.requests[1]?.body).toContain('"clientId":"old"');
+    expect(fetch.requests[1]?.body).toContain('"clientSecret":"s"');
   });
 
   it("deletes an identity provider with a DELETE", async () => {

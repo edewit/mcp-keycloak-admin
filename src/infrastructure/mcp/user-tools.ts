@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CreateUserUseCase } from "../../application/users/create-user.use-case.js";
 import { DeleteUserUseCase } from "../../application/users/delete-user.use-case.js";
 import { GetUserUseCase } from "../../application/users/get-user.use-case.js";
+import { ListUserCredentialsUseCase } from "../../application/users/list-user-credentials.use-case.js";
 import { ListUserSessionsUseCase } from "../../application/users/list-user-sessions.use-case.js";
 import { LogoutUserUseCase } from "../../application/users/logout-user.use-case.js";
 import { ResetUserPasswordUseCase } from "../../application/users/reset-user-password.use-case.js";
@@ -517,11 +518,40 @@ function listUserSessionsTool(deps: UserToolDeps): ToolDefinition {
   };
 }
 
+function listUserCredentialsTool(deps: UserToolDeps): ToolDefinition {
+  return {
+    name: "keycloak_user_credentials_list",
+    title: "List user credentials",
+    description:
+      "Read-only. Lists credentials stored on a user (type, id, userLabel, createdDate) — e.g. password, otp, webauthn-passwordless. User search/get omit credentials; use this before enrollment to decide required-action vs execute-actions-email. Empty array means zero credentials.",
+    level: ToolLevel.Read,
+    inputSchema: {
+      id: z
+        .string()
+        .describe(
+          "The Keycloak user id (UUID) whose credentials to list. Required; obtain it from keycloak_user_search.",
+        ),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+    },
+    async handler(args) {
+      const credentials = await new ListUserCredentialsUseCase(
+        deps.userRepository,
+      ).execute(UserId.fromString(String(args.id)));
+      return textResult(JSON.stringify(credentials, null, 2));
+    },
+  };
+}
+
 export function buildUserTools(deps: UserToolDeps): ToolDefinition[] {
   return [
     searchUsersTool(deps),
     getUserTool(deps),
     listUserSessionsTool(deps),
+    listUserCredentialsTool(deps),
     createUserTool(deps),
     updateUserTool(deps),
     setUserEnabledTool(deps),

@@ -5,6 +5,7 @@ import { DeleteIdentityProviderUseCase } from "../../application/idp/delete-iden
 import { GetIdentityProviderUseCase } from "../../application/idp/get-identity-provider.use-case.js";
 import { ListIdentityProvidersUseCase } from "../../application/idp/list-identity-providers.use-case.js";
 import { ListIdpMappersUseCase } from "../../application/idp/list-idp-mappers.use-case.js";
+import { UpdateIdentityProviderUseCase } from "../../application/idp/update-identity-provider.use-case.js";
 import type { IdentityProvider } from "../../domain/idp/identity-provider.js";
 import type { IdentityProviderRepository } from "../../domain/ports/identity-provider-repository.js";
 import { ToolLevel } from "../../domain/policy/tool-level.js";
@@ -23,6 +24,7 @@ function serializeIdp(idp: IdentityProvider): Record<string, unknown> {
     providerId: idp.providerId,
     enabled: idp.enabled,
     displayName: idp.displayName,
+    trustEmail: idp.trustEmail,
   };
 }
 
@@ -45,7 +47,7 @@ function listIdpsTool(deps: IdpToolDeps): ToolDefinition {
     name: "keycloak_idp_list",
     title: "List identity providers",
     description:
-      "Lists all identity providers configured in the target realm. Read-only and idempotent; it makes no changes. Use it to discover available providers before calling keycloak_idp_get, keycloak_idp_mappers_list, or keycloak_idp_delete. Takes no parameters and returns a JSON array of providers, each with alias, providerId, enabled, and displayName.",
+      "Lists all identity providers configured in the target realm. Read-only and idempotent; it makes no changes. Use it to discover available providers before calling keycloak_idp_get, keycloak_idp_mappers_list, keycloak_idp_update, or keycloak_idp_delete. Takes no parameters and returns a JSON array of providers, each with alias, providerId, enabled, displayName, and trustEmail.",
     level: ToolLevel.Read,
     inputSchema: {},
     annotations: {
@@ -67,7 +69,7 @@ function getIdpTool(deps: IdpToolDeps): ToolDefinition {
     name: "keycloak_idp_get",
     title: "Get identity provider",
     description:
-      'Fetches a single identity provider by its alias from the target realm. Read-only and idempotent; it makes no changes. Use it to inspect one provider after finding its alias with keycloak_idp_list. Returns a JSON object with alias, providerId, enabled, and displayName, or the text "Identity provider not found." if no provider matches the alias.',
+      'Fetches a single identity provider by its alias from the target realm. Read-only and idempotent; it makes no changes. Use it to inspect one provider after finding its alias with keycloak_idp_list. Returns alias, providerId, enabled, displayName, and trustEmail, or "Identity provider not found."',
     level: ToolLevel.Read,
     inputSchema: {
       alias: z
@@ -146,6 +148,16 @@ function createIdpTool(deps: IdpToolDeps): ToolDefinition {
         .describe(
           "Whether the provider is enabled for use. Defaults to true; pass false to create it in a disabled state.",
         ),
+      displayName: z
+        .string()
+        .optional()
+        .describe("Optional UI label for the provider on the login page."),
+      trustEmail: z
+        .boolean()
+        .optional()
+        .describe(
+          "When true, Keycloak trusts emails from this IdP without a verify-email step. Prefer true for corporate SSO where the customer vouches for addresses.",
+        ),
       config: z
         .record(z.string(), z.string())
         .optional()
@@ -165,9 +177,78 @@ function createIdpTool(deps: IdpToolDeps): ToolDefinition {
         alias: IdpAlias.fromString(String(args.alias)),
         providerId: String(args.providerId),
         enabled: args.enabled !== false,
+        ...(typeof args.displayName === "string"
+          ? { displayName: args.displayName }
+          : {}),
+        ...(typeof args.trustEmail === "boolean"
+          ? { trustEmail: args.trustEmail }
+          : {}),
         config: readConfig(args.config),
       });
       return textResult(`Identity provider "${String(args.alias)}" created.`);
+    },
+  };
+}
+
+function updateIdpTool(deps: IdpToolDeps): ToolDefinition {
+  return {
+    name: "keycloak_idp_update",
+    title: "Update identity provider",
+    description:
+      "Updates an existing identity provider via read-merge-write. Change enabled, displayName, trustEmail, and/or merge config keys without recreating. Idempotent. Use keycloak_idp_get afterward to verify.",
+    level: ToolLevel.Write,
+    inputSchema: {
+      alias: z
+        .string()
+        .describe(
+          "Unique alias of the identity provider to update, as shown by keycloak_idp_list. Required.",
+        ),
+      enabled: z
+        .boolean()
+        .optional()
+        .describe("New enabled state. Omit to leave unchanged."),
+      displayName: z
+        .string()
+        .optional()
+        .describe("New display name. Omit to leave unchanged."),
+      trustEmail: z
+        .boolean()
+        .optional()
+        .describe(
+          "Whether to trust IdP emails without verification. Omit to leave unchanged.",
+        ),
+      config: z
+        .record(z.string(), z.string())
+        .optional()
+        .describe(
+          "Config keys to merge into the existing provider config (does not replace the whole map).",
+        ),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+    },
+    async handler(args) {
+      const result = await new UpdateIdentityProviderUseCase(
+        deps.identityProviderRepository,
+      ).execute(IdpAlias.fromString(String(args.alias)), {
+        ...(typeof args.enabled === "boolean" ? { enabled: args.enabled } : {}),
+        ...(typeof args.displayName === "string"
+          ? { displayName: args.displayName }
+          : {}),
+        ...(typeof args.trustEmail === "boolean"
+          ? { trustEmail: args.trustEmail }
+          : {}),
+        ...(args.config !== undefined
+          ? { config: readConfig(args.config) }
+          : {}),
+      });
+      return textResult(
+        result.updated
+          ? `Identity provider "${String(args.alias)}" updated.`
+          : `Not updated: ${result.reason ?? "unknown reason"}`,
+      );
     },
   };
 }
@@ -218,6 +299,7 @@ export function buildIdpTools(deps: IdpToolDeps): ToolDefinition[] {
     getIdpTool(deps),
     listIdpMappersTool(deps),
     createIdpTool(deps),
+    updateIdpTool(deps),
     deleteIdpTool(deps),
   ];
 }

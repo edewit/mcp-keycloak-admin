@@ -88,6 +88,14 @@ export class KeycloakRealmInfo implements RealmInfo {
     if (patch.organizationsEnabled !== undefined) {
       merged.organizationsEnabled = patch.organizationsEnabled;
     }
+    if (patch.acrLoaMap !== undefined) {
+      const existing =
+        typeof merged.attributes === "object" && merged.attributes !== null
+          ? { ...(merged.attributes as Record<string, unknown>) }
+          : {};
+      existing["acr.loa.map"] = JSON.stringify(patch.acrLoaMap);
+      merged.attributes = existing;
+    }
     await this.client.put("", merged);
   }
 

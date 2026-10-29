@@ -6,6 +6,7 @@ import { UserId } from "../../domain/shared/user-id.js";
 import { Username } from "../../domain/shared/username.js";
 import type { NewUser } from "../../domain/user/new-user.js";
 import type { User } from "../../domain/user/user.js";
+import type { UserCredential } from "../../domain/user/user-credential.js";
 import type { UserSearchCriteria } from "../../domain/user/user-search-criteria.js";
 import type { UserSession } from "../../domain/user/user-session.js";
 import type { UserUpdate } from "../../domain/user/user-update.js";
@@ -17,6 +18,13 @@ interface KeycloakUser {
   readonly username: string;
   readonly email?: string;
   readonly enabled?: boolean;
+}
+
+interface KeycloakCredential {
+  readonly id?: string;
+  readonly type?: string;
+  readonly userLabel?: string;
+  readonly createdDate?: number;
 }
 
 interface KeycloakSession {
@@ -129,6 +137,18 @@ export class KeycloakUserRepository implements UserRepository {
 
   delete(id: UserId): Promise<void> {
     return this.client.delete(`/users/${id.toString()}`);
+  }
+
+  async listCredentials(id: UserId): Promise<UserCredential[]> {
+    const raw = await this.client.getJson<KeycloakCredential[]>(
+      `/users/${id.toString()}/credentials`,
+    );
+    return raw.map((credential) => ({
+      id: credential.id ?? "",
+      type: credential.type ?? "unknown",
+      userLabel: credential.userLabel ?? null,
+      createdDate: credential.createdDate ?? null,
+    }));
   }
 
   async listSessions(id: UserId): Promise<UserSession[]> {

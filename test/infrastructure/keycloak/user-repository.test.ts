@@ -129,4 +129,19 @@ describe("KeycloakUserRepository", () => {
     expect(sessions[0]?.id).toBe("s1");
     expect(sessions[0]?.ipAddress).toBe("1.2.3.4");
   });
+
+  it("lists user credentials", async () => {
+    const { repo, fetch } = makeRepo([
+      jsonResponse([
+        { id: "c1", type: "password", createdDate: 100 },
+        { id: "c2", type: "otp", userLabel: "phone" },
+      ]),
+    ]);
+    const credentials = await repo.listCredentials(UserId.fromString(ID));
+    expect(fetch.requests[0]?.url).toContain(`/users/${ID}/credentials`);
+    expect(credentials).toEqual([
+      { id: "c1", type: "password", userLabel: null, createdDate: 100 },
+      { id: "c2", type: "otp", userLabel: "phone", createdDate: null },
+    ]);
+  });
 });

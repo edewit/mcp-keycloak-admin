@@ -26,21 +26,23 @@ Returns `time`, `operationType`, `resourceType`, `resourcePath`.
 
 Read a curated set of realm configuration flags (registration, password reset,
 email verification, brute-force protection, token lifespans, `browserFlow`,
-`organizationsEnabled`, WebAuthn passwordless policy fields, and a redacted
+`organizationsEnabled`, WebAuthn passwordless policy fields, parsed
+`acrLoaMap` when `attributes["acr.loa.map"]` is set, and a redacted
 `smtpServer` summary — host/from/flags + `hasPassword`, never the password).
 No parameters.
 
 ## `keycloak_realm_update` [W]
 
 Read-merge-write selected realm fields so omitted values are not blanked.
-Provide at least one of `smtpServer`, `webAuthnPasswordlessPolicy`, or
-`organizationsEnabled`.
+Provide at least one of `smtpServer`, `webAuthnPasswordlessPolicy`,
+`organizationsEnabled`, or `acrLoaMap`.
 
 | Parameter                    | Type    | Required | Description                                                                |
 | ---------------------------- | ------- | -------- | -------------------------------------------------------------------------- |
 | `smtpServer`                 | object  | no\*     | Replaces realm SMTP (`host`, `from`, optional `port`/`auth`/`user`/…).     |
 | `webAuthnPasswordlessPolicy` | object  | no\*     | Sets `webAuthnPolicyPasswordless*` only (`rpId`, `requireResidentKey`, …). |
 | `organizationsEnabled`       | boolean | no\*     | Enable stock Organizations (needed for domain-based SSO).                  |
+| `acrLoaMap`                  | object  | no\*     | ACR → LoA integers written to realm attribute `acr.loa.map` as JSON.       |
 
 \* At least one required.
 

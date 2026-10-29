@@ -50,6 +50,7 @@ describe("user tools", () => {
       "keycloak_user_search",
       "keycloak_user_get",
       "keycloak_user_sessions_list",
+      "keycloak_user_credentials_list",
     ]);
   });
 

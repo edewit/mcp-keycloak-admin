@@ -7,5 +7,6 @@ export function anIdp(alias: string, providerId = "oidc"): IdentityProvider {
     providerId,
     enabled: true,
     displayName: null,
+    trustEmail: false,
   };
 }

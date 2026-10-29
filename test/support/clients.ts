@@ -11,5 +11,9 @@ export function aClient(
     clientId: ClientId.fromString(clientId),
     enabled: true,
     publicClient: false,
+    redirectUris: [],
+    webOrigins: [],
+    attributes: {},
+    authenticationFlowBindingOverrides: {},
   };
 }

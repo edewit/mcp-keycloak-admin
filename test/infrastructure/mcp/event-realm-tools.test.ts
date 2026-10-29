@@ -104,6 +104,44 @@ describe("event & realm tools", () => {
     expect(patches[0]?.organizationsEnabled).toBe(true);
   });
 
+  it("realm update tool sets acrLoaMap", async () => {
+    const patches: RealmConfigPatch[] = [];
+    const tools = buildEventRealmTools({
+      eventLog,
+      realmInfo: makeRealmInfo(patches),
+    });
+    const tool = tools.find(
+      (candidate) => candidate.name === "keycloak_realm_update",
+    );
+    const result = await tool!.handler({
+      acrLoaMap: { copper: 0, gold: 2 },
+    });
+    expect(result.content[0]?.text).toContain("acrLoaMap");
+    expect(patches[0]?.acrLoaMap).toEqual({ copper: 0, gold: 2 });
+  });
+
+  it("realm get config returns parsed acrLoaMap", async () => {
+    const tools = buildEventRealmTools({
+      eventLog,
+      realmInfo: {
+        getRealmConfig: () =>
+          Promise.resolve({
+            realm: "demo-realm",
+            attributes: {
+              "acr.loa.map": '{"copper":0,"gold":2}',
+            },
+          }),
+        updateRealmConfig: () => Promise.resolve(),
+        serverInfo: () => Promise.resolve({}),
+      },
+    });
+    const tool = tools.find(
+      (candidate) => candidate.name === "keycloak_realm_get_config",
+    );
+    const result = await tool!.handler({});
+    expect(result.content[0]?.text).toContain('"gold": 2');
+  });
+
   it("server info tool returns the Keycloak version", async () => {
     const tools = buildEventRealmTools({
       eventLog,

@@ -3,11 +3,13 @@
 ## `keycloak_client_list` [R]
 
 List the realm clients. No parameters. Returns `uuid`, `clientId`, `enabled`,
-`publicClient`.
+`publicClient`, plus redirect/web origins, attributes, and flow overrides when
+present on the representation.
 
 ## `keycloak_client_get` [R]
 
-Fetch a client by its human-readable `clientId`.
+Fetch a client by its human-readable `clientId` (includes attributes such as
+`minimum.acr.value` / `acr.loa.map`, and `authenticationFlowBindingOverrides`).
 
 | Parameter  | Type   | Required | Description      |
 | ---------- | ------ | -------- | ---------------- |
@@ -48,16 +50,18 @@ Create a realm client.
 
 ## `keycloak_client_update` [W]
 
-Update a client's `enabled`, `publicClient`, `redirectUris` or `webOrigins`
-(only the supplied fields change).
+Read-merge-write a client. Only the supplied fields change.
 
-| Parameter      | Type     | Required | Description      |
-| -------------- | -------- | -------- | ---------------- |
-| `clientId`     | string   | yes      | The client's id. |
-| `enabled`      | boolean  | no       |                  |
-| `publicClient` | boolean  | no       |                  |
-| `redirectUris` | string[] | no       |                  |
-| `webOrigins`   | string[] | no       |                  |
+| Parameter          | Type     | Required | Description                                                                |
+| ------------------ | -------- | -------- | -------------------------------------------------------------------------- |
+| `clientId`         | string   | yes      | The client's id.                                                           |
+| `enabled`          | boolean  | no       |                                                                            |
+| `publicClient`     | boolean  | no       |                                                                            |
+| `redirectUris`     | string[] | no       |                                                                            |
+| `webOrigins`       | string[] | no       |                                                                            |
+| `attributes`       | object   | no       | String attributes to merge (`minimum.acr.value`, `acr.loa.map`, …).        |
+| `minimumAcrValue`  | string   | no       | Convenience for `attributes["minimum.acr.value"]`.                         |
+| `browserFlowAlias` | string   | no       | Flow **alias** bound as browser override (resolved to id). `""` clears it. |
 
 ## `keycloak_client_delete` [D]
 

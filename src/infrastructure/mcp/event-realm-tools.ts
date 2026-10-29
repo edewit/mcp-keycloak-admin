@@ -122,6 +122,24 @@ function smtpSummary(
   };
 }
 
+function acrLoaMapFromAttributes(
+  record: Record<string, unknown>,
+): unknown | undefined {
+  const attributes = record.attributes;
+  if (typeof attributes !== "object" || attributes === null) {
+    return undefined;
+  }
+  const raw = (attributes as Record<string, unknown>)["acr.loa.map"];
+  if (typeof raw !== "string") {
+    return undefined;
+  }
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return raw;
+  }
+}
+
 function serverSummary(info: Record<string, unknown>): Record<string, unknown> {
   const systemInfo = info.systemInfo;
   const version =
@@ -219,7 +237,7 @@ function realmConfigTool(deps: EventRealmToolDeps): ToolDefinition {
     name: "keycloak_realm_get_config",
     title: "Get realm configuration",
     description:
-      "Read-only. Returns a curated subset of the realm's configuration as a JSON object: registration/password-reset flags, email verification, brute-force and SSL settings, token/SSO lifespans, browserFlow, organizationsEnabled, WebAuthn passwordless policy fields, and a redacted smtp summary (host/from/flags, hasPassword — never the password). Use after keycloak_realm_update to verify. Takes no parameters.",
+      "Read-only. Returns a curated subset of the realm's configuration as a JSON object: registration/password-reset flags, email verification, brute-force and SSL settings, token/SSO lifespans, browserFlow, organizationsEnabled, WebAuthn passwordless policy fields, parsed acr.loa.map (when set), and a redacted smtp summary (host/from/flags, hasPassword — never the password). Use after keycloak_realm_update to verify. Takes no parameters.",
     level: ToolLevel.Read,
     inputSchema: {},
     annotations: READ_ANNOTATIONS,
@@ -230,6 +248,10 @@ function realmConfigTool(deps: EventRealmToolDeps): ToolDefinition {
       if (smtp !== undefined) {
         curated.smtpServer = smtp;
       }
+      const acrLoaMap = acrLoaMapFromAttributes(config);
+      if (acrLoaMap !== undefined) {
+        curated.acrLoaMap = acrLoaMap;
+      }
       return textResult(JSON.stringify(curated, null, 2));
     },
   };
@@ -238,9 +260,9 @@ function realmConfigTool(deps: EventRealmToolDeps): ToolDefinition {
 function updateRealmConfigTool(deps: EventRealmToolDeps): ToolDefinition {
   return {
     name: "keycloak_realm_update",
-    title: "Update realm SMTP, WebAuthn passwordless, or organizations flag",
+    title: "Update realm SMTP, WebAuthn, organizations, or ACR map",
     description:
-      "Write. Read-merge-writes the realm representation so omitted fields are not blanked. Provide smtpServer, webAuthnPasswordlessPolicy, and/or organizationsEnabled (at least one required). smtpServer replaces the whole SMTP map; passwordless policy sets only webAuthnPolicyPasswordless* fields (not 2FA WebAuthn); organizationsEnabled turns on stock Organizations for domain-based SSO. Verify with keycloak_realm_get_config.",
+      "Write. Read-merge-writes the realm representation so omitted fields are not blanked. Provide smtpServer, webAuthnPasswordlessPolicy, organizationsEnabled, and/or acrLoaMap (at least one required). smtpServer replaces the whole SMTP map; passwordless policy sets only webAuthnPolicyPasswordless* fields (not 2FA WebAuthn); organizationsEnabled turns on stock Organizations; acrLoaMap writes realm attribute acr.loa.map as JSON. Verify with keycloak_realm_get_config.",
     level: ToolLevel.Write,
     inputSchema: {
       smtpServer: smtpServerSchema.optional(),
@@ -250,6 +272,12 @@ function updateRealmConfigTool(deps: EventRealmToolDeps): ToolDefinition {
         .optional()
         .describe(
           "Enable stock Keycloak Organizations (required for email-domain IdP routing). Prefer true before keycloak_org_create.",
+        ),
+      acrLoaMap: z
+        .record(z.string(), z.number())
+        .optional()
+        .describe(
+          'ACR name → LoA integer map, stored as realm attribute acr.loa.map JSON (e.g. {"copper":0,"silver":1,"gold":2}). Required for minimum.acr.value to mean anything.',
         ),
     },
     annotations: {
@@ -352,6 +380,17 @@ function updateRealmConfigTool(deps: EventRealmToolDeps): ToolDefinition {
         ...(typeof args.organizationsEnabled === "boolean"
           ? { organizationsEnabled: args.organizationsEnabled }
           : {}),
+        ...(args.acrLoaMap !== undefined &&
+        args.acrLoaMap !== null &&
+        typeof args.acrLoaMap === "object"
+          ? {
+              acrLoaMap: Object.fromEntries(
+                Object.entries(args.acrLoaMap as Record<string, unknown>)
+                  .filter(([, value]) => typeof value === "number")
+                  .map(([key, value]) => [key, value as number]),
+              ),
+            }
+          : {}),
       };
       await new UpdateRealmConfigUseCase(deps.realmInfo).execute(patch);
       const parts: string[] = [];
@@ -363,6 +402,9 @@ function updateRealmConfigTool(deps: EventRealmToolDeps): ToolDefinition {
       }
       if (patch.organizationsEnabled !== undefined) {
         parts.push("organizationsEnabled");
+      }
+      if (patch.acrLoaMap !== undefined) {
+        parts.push("acrLoaMap");
       }
       return textResult(
         `Updated realm ${parts.join(" and ")}. Re-read with keycloak_realm_get_config.`,

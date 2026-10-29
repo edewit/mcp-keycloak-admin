@@ -31,4 +31,9 @@ export interface RealmConfigPatch {
   readonly webAuthnPasswordlessPolicy?: WebAuthnPasswordlessPolicy;
   /** Stock Keycloak Organizations feature flag (required for domain routing). */
   readonly organizationsEnabled?: boolean;
+  /**
+   * ACR → LoA map written to realm attribute `acr.loa.map` as JSON
+   * (e.g. `{ copper: 0, silver: 1, gold: 2 }`).
+   */
+  readonly acrLoaMap?: Readonly<Record<string, number>>;
 }

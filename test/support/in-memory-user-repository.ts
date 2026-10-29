@@ -4,6 +4,7 @@ import type { Password } from "../../src/domain/shared/password.js";
 import type { UserId } from "../../src/domain/shared/user-id.js";
 import type { NewUser } from "../../src/domain/user/new-user.js";
 import type { User } from "../../src/domain/user/user.js";
+import type { UserCredential } from "../../src/domain/user/user-credential.js";
 import type { UserSearchCriteria } from "../../src/domain/user/user-search-criteria.js";
 import type { UserSession } from "../../src/domain/user/user-session.js";
 import type { UserUpdate } from "../../src/domain/user/user-update.js";
@@ -29,6 +30,7 @@ export class InMemoryUserRepository implements UserRepository {
   readonly loggedOutIds: string[] = [];
   readonly sessionsById = new Map<string, number>();
   readonly sessionsList = new Map<string, UserSession[]>();
+  readonly credentialsById = new Map<string, UserCredential[]>();
   readonly updates: { id: string; changes: UserUpdate }[] = [];
 
   constructor(users: User[] = []) {
@@ -38,6 +40,10 @@ export class InMemoryUserRepository implements UserRepository {
   update(id: UserId, changes: UserUpdate): Promise<void> {
     this.updates.push({ id: id.toString(), changes });
     return Promise.resolve();
+  }
+
+  listCredentials(id: UserId): Promise<UserCredential[]> {
+    return Promise.resolve(this.credentialsById.get(id.toString()) ?? []);
   }
 
   listSessions(id: UserId): Promise<UserSession[]> {

@@ -79,8 +79,10 @@ Executions add does **not** dedupe — list before adding.
 
 ## Stage 3 — Bind
 
-- **One app only:** client `authenticationFlowBindingOverrides.browser` = flow **id**
-  (read-merge-write the client). Prefer this when the request is about a single portal.
+- **One app only:** `keycloak_client_update` with `browserFlowAlias` set to the
+  flow **alias** (MCP resolves to flow id and sets
+  `authenticationFlowBindingOverrides.browser`). Prefer this when the request is
+  about a single portal. Verify with `keycloak_client_get`.
 - **Whole realm:** `keycloak_auth_flow_bind` with `browserFlow` = flow **alias**.
   Affects admin/account consoles too — confirm before doing this in shared realms.
 

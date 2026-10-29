@@ -14,7 +14,7 @@ describe("UpdateRealmConfigUseCase", () => {
     await expect(
       new UpdateRealmConfigUseCase(realm).execute({}),
     ).rejects.toThrow(
-      /smtpServer|webAuthnPasswordlessPolicy|organizationsEnabled/,
+      /smtpServer|webAuthnPasswordlessPolicy|organizationsEnabled|acrLoaMap/,
     );
   });
 

@@ -94,22 +94,56 @@ describe("KeycloakClientRepository", () => {
     );
   });
 
-  it("updates a client with a PUT of only the changed fields", async () => {
-    const { repo, fetch } = makeRepo([new Response(null, { status: 204 })]);
+  it("updates a client via GET then PUT merge", async () => {
+    const { repo, fetch } = makeRepo([
+      jsonResponse({
+        id: UUID,
+        clientId: "mcp-admin",
+        enabled: true,
+        redirectUris: ["https://app/*"],
+      }),
+      new Response(null, { status: 204 }),
+    ]);
     await repo.update(ClientUuid.fromString(UUID), { enabled: false });
-    expect(fetch.requests[0]?.method).toBe("PUT");
-    expect(fetch.requests[0]?.url).toContain(`/clients/${UUID}`);
-    expect(fetch.requests[0]?.body).toBe('{"enabled":false}');
+    expect(fetch.requests[0]?.method).toBe("GET");
+    expect(fetch.requests[1]?.method).toBe("PUT");
+    expect(fetch.requests[1]?.url).toContain(`/clients/${UUID}`);
+    expect(fetch.requests[1]?.body).toContain('"enabled":false');
+    expect(fetch.requests[1]?.body).toContain(
+      '"redirectUris":["https://app/*"]',
+    );
   });
 
-  it("updates a client's web origins with a PUT", async () => {
-    const { repo, fetch } = makeRepo([new Response(null, { status: 204 })]);
+  it("merges client attributes and browser flow override", async () => {
+    const { repo, fetch } = makeRepo([
+      jsonResponse({
+        id: UUID,
+        clientId: "mcp-admin",
+        attributes: { existing: "1" },
+        authenticationFlowBindingOverrides: {},
+      }),
+      new Response(null, { status: 204 }),
+    ]);
+    await repo.update(ClientUuid.fromString(UUID), {
+      attributes: { "minimum.acr.value": "gold" },
+      authenticationFlowBindingOverrides: { browser: "flow-id" },
+    });
+    expect(fetch.requests[1]?.body).toContain('"existing":"1"');
+    expect(fetch.requests[1]?.body).toContain('"minimum.acr.value":"gold"');
+    expect(fetch.requests[1]?.body).toContain('"browser":"flow-id"');
+  });
+
+  it("updates a client's web origins with a PUT merge", async () => {
+    const { repo, fetch } = makeRepo([
+      jsonResponse({ id: UUID, clientId: "mcp-admin", enabled: true }),
+      new Response(null, { status: 204 }),
+    ]);
     await repo.update(ClientUuid.fromString(UUID), {
       webOrigins: ["https://a.example.com"],
     });
-    expect(fetch.requests[0]?.method).toBe("PUT");
-    expect(fetch.requests[0]?.body).toBe(
-      '{"webOrigins":["https://a.example.com"]}',
+    expect(fetch.requests[1]?.method).toBe("PUT");
+    expect(fetch.requests[1]?.body).toContain(
+      '"webOrigins":["https://a.example.com"]',
     );
   });
 

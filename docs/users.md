@@ -20,6 +20,18 @@ Example call arguments:
 { "email": "jean.dupont@example.com" }
 ```
 
+## `keycloak_user_credentials_list` [R]
+
+List credentials stored on a user (password, otp, webauthn, …). User search/get
+omit credentials — use this before enrollment to see if the account is
+zero-credential.
+
+| Parameter | Type   | Required | Description           |
+| --------- | ------ | -------- | --------------------- |
+| `id`      | string | yes      | The user's id (UUID). |
+
+Returns `id`, `type`, `userLabel`, `createdDate` (empty array if none).
+
 ## `keycloak_user_delete` [D]
 
 Permanently delete a user. **Destructive** — requires confirmation.

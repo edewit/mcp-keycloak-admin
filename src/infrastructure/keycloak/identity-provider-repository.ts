@@ -1,5 +1,6 @@
 import type {
   IdentityProvider,
+  IdentityProviderUpdate,
   IdpMapper,
   NewIdentityProvider,
 } from "../../domain/idp/identity-provider.js";
@@ -13,6 +14,9 @@ interface KeycloakIdp {
   readonly providerId?: string;
   readonly enabled?: boolean;
   readonly displayName?: string;
+  readonly trustEmail?: boolean;
+  readonly config?: Record<string, string>;
+  readonly [key: string]: unknown;
 }
 
 interface KeycloakIdpMapper {
@@ -27,6 +31,7 @@ function toIdp(raw: KeycloakIdp): IdentityProvider {
     providerId: raw.providerId ?? "unknown",
     enabled: raw.enabled ?? false,
     displayName: raw.displayName ?? null,
+    trustEmail: raw.trustEmail === true,
   };
 }
 
@@ -59,8 +64,39 @@ export class KeycloakIdentityProviderRepository implements IdentityProviderRepos
       alias: idp.alias.toString(),
       providerId: idp.providerId,
       enabled: idp.enabled,
+      ...(idp.displayName !== undefined
+        ? { displayName: idp.displayName }
+        : {}),
+      ...(idp.trustEmail !== undefined ? { trustEmail: idp.trustEmail } : {}),
       config: idp.config,
     });
+  }
+
+  async update(
+    alias: IdpAlias,
+    changes: IdentityProviderUpdate,
+  ): Promise<void> {
+    const path = `/identity-provider/instances/${alias.toString()}`;
+    const current = await this.client.getJson<KeycloakIdp>(path);
+    const merged: Record<string, unknown> = { ...current };
+    if (changes.enabled !== undefined) {
+      merged.enabled = changes.enabled;
+    }
+    if (changes.displayName !== undefined) {
+      merged.displayName = changes.displayName;
+    }
+    if (changes.trustEmail !== undefined) {
+      merged.trustEmail = changes.trustEmail;
+    }
+    if (changes.config !== undefined) {
+      merged.config = {
+        ...(typeof current.config === "object" && current.config !== null
+          ? current.config
+          : {}),
+        ...changes.config,
+      };
+    }
+    await this.client.put(path, merged);
   }
 
   delete(alias: IdpAlias): Promise<void> {

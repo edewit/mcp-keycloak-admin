@@ -102,7 +102,11 @@ export function createServer(config: AppConfig): McpServer {
     [
       ...buildUserTools({ userRepository, confirmers }),
       ...buildRoleTools({ roleRepository, clientRepository, confirmers }),
-      ...buildClientTools({ clientRepository, confirmers }),
+      ...buildClientTools({
+        clientRepository,
+        authenticationRepository,
+        confirmers,
+      }),
       ...buildClientScopeTools({
         clientRepository,
         clientScopeRepository,

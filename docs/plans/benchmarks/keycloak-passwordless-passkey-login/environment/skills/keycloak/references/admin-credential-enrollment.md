@@ -31,9 +31,10 @@ Never set a temporary password to fake enrollment for passwordless intents.
 ## Tools
 
 - `keycloak_user_search` / `keycloak_user_get`
+- `keycloak_user_credentials_list` — search/get omit credentials; empty array ⇒ zero-credential
 - `keycloak_auth_required_actions_list` / `keycloak_auth_required_action_set_enabled`
-- `keycloak_user_send_action_email` (variant B, if available)
-- Credentials: Admin REST `GET .../users/{id}/credentials` (search omits them)
+- `keycloak_user_send_action_email` (variant B)
+- `keycloak_realm_update` for SMTP when using variant B
 
 ## Shared prerequisite
 
@@ -58,8 +59,8 @@ MCP: list + `keycloak_auth_required_action_set_enabled` when available.
 
 ## Variant A — requiredActions on the user
 
-1. Confirm user has some credential (`GET .../credentials` ≠ `[]`).
-2. Read full user, merge `requiredActions`, update **read-merge-write**.
+1. Confirm user has some credential (`keycloak_user_credentials_list` ≠ `[]`).
+2. Read full user, merge `requiredActions`, update **read-merge-write** (MCP `keycloak_user_update` does not yet set requiredActions — use Admin REST for that merge if needed).
 3. Re-get: `requiredActions` contains the alias.
 
 ## Variant B — enrollment email (zero-credential / passkey bootstrap)
@@ -82,7 +83,7 @@ curl -s -X PUT "$BASE/admin/realms/$REALM/users/<user-id>/execute-actions-email\
 
 ## Traps
 
-- Deciding “has credentials” from `GET /users?username=` — use `/credentials`.
+- Deciding “has credentials” from user search/get — use `keycloak_user_credentials_list`.
 - Sending only `{requiredActions:[...]}` on user PUT — wipes profile fields.
 - Leaving the required action registered but disabled.
 - Treating email 204 as success for an unverified address when policy should refuse.

@@ -7,4 +7,9 @@ export interface ClientSummary {
   readonly clientId: ClientId;
   readonly enabled: boolean;
   readonly publicClient: boolean;
+  readonly redirectUris: readonly string[];
+  readonly webOrigins: readonly string[];
+  readonly attributes: Readonly<Record<string, string>>;
+  /** Binding name → authentication flow id (not alias). */
+  readonly authenticationFlowBindingOverrides: Readonly<Record<string, string>>;
 }

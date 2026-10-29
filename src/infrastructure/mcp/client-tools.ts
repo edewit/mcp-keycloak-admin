@@ -9,6 +9,7 @@ import { RegenerateClientSecretUseCase } from "../../application/clients/regener
 import { UpdateClientUseCase } from "../../application/clients/update-client.use-case.js";
 import type { ClientSummary } from "../../domain/client/client-summary.js";
 import type { ClientUpdate } from "../../domain/client/new-client.js";
+import type { AuthenticationRepository } from "../../domain/ports/authentication-repository.js";
 import type { ClientRepository } from "../../domain/ports/client-repository.js";
 import { ToolLevel } from "../../domain/policy/tool-level.js";
 import { ClientId } from "../../domain/shared/client-id.js";
@@ -17,6 +18,7 @@ import { type ToolDefinition, textResult } from "./tool-definition.js";
 
 export interface ClientToolDeps {
   readonly clientRepository: ClientRepository;
+  readonly authenticationRepository: AuthenticationRepository;
   readonly confirmers: ConfirmerFactory;
 }
 
@@ -26,7 +28,24 @@ function serializeClient(client: ClientSummary): Record<string, unknown> {
     clientId: client.clientId.toString(),
     enabled: client.enabled,
     publicClient: client.publicClient,
+    redirectUris: client.redirectUris,
+    webOrigins: client.webOrigins,
+    attributes: client.attributes,
+    authenticationFlowBindingOverrides:
+      client.authenticationFlowBindingOverrides,
   };
+}
+
+async function resolveBrowserFlowId(
+  deps: ClientToolDeps,
+  flowAlias: string,
+): Promise<string> {
+  const flows = await deps.authenticationRepository.listFlows();
+  const match = flows.find((flow) => flow.alias === flowAlias);
+  if (match === undefined || match.id === "") {
+    throw new Error(`Authentication flow alias "${flowAlias}" not found`);
+  }
+  return match.id;
 }
 
 function listClientsTool(deps: ClientToolDeps): ToolDefinition {
@@ -62,8 +81,9 @@ function getClientTool(deps: ClientToolDeps): ToolDefinition {
     description:
       "Fetch a single realm client by its clientId. Read-only and idempotent; it " +
       "does not modify anything. Use keycloak_client_list first if you do not know " +
-      "the exact clientId. Returns a JSON object with uuid, clientId, enabled, and " +
-      'publicClient, or the text "Client not found." when no client matches.',
+      "the exact clientId. Returns uuid, clientId, enabled, publicClient, " +
+      "redirectUris, webOrigins, attributes (incl. minimum.acr.value / acr.loa.map), " +
+      'and authenticationFlowBindingOverrides, or "Client not found."',
     level: ToolLevel.Read,
     inputSchema: {
       clientId: z
@@ -271,13 +291,11 @@ function updateClientTool(deps: ClientToolDeps): ToolDefinition {
     name: "keycloak_client_update",
     title: "Update client",
     description:
-      "Update an existing client's enabled flag, public flag, redirect URIs and/or " +
-      "web origins. " +
-      "Only the fields you supply are changed; omitted fields are left untouched. " +
-      "This is a write operation and is idempotent: applying the same values again " +
-      "yields the same state. Use keycloak_client_list or keycloak_client_get to find " +
-      "the client first. Returns a confirmation message, or a reason string (e.g. when " +
-      "the client does not exist).",
+      "Update an existing client via read-merge-write. Can change enabled, " +
+      "publicClient, redirectUris, webOrigins, attributes (e.g. minimum.acr.value, " +
+      "acr.loa.map), and bind a browser authentication flow by alias " +
+      "(authenticationFlowBindingOverrides.browser → flow id). Omitted fields stay " +
+      "unchanged. Idempotent. Use keycloak_client_get first.",
     level: ToolLevel.Write,
     inputSchema: {
       clientId: z
@@ -318,6 +336,27 @@ function updateClientTool(deps: ClientToolDeps): ToolDefinition {
             'URI origins, "*" allows any). Omit to leave the current origins ' +
             "unchanged; pass an empty array to clear them.",
         ),
+      attributes: z
+        .record(z.string(), z.string())
+        .optional()
+        .describe(
+          'Client attributes to merge (string values). Use for "minimum.acr.value", ' +
+            '"default.acr.values", or client-level "acr.loa.map" JSON.',
+        ),
+      minimumAcrValue: z
+        .string()
+        .optional()
+        .describe(
+          'Convenience for attributes["minimum.acr.value"] (e.g. "gold"). Requires a realm or client acr.loa.map.',
+        ),
+      browserFlowAlias: z
+        .string()
+        .optional()
+        .describe(
+          "Authentication flow alias to bind as this client's browser override " +
+            "(resolved to flow id). Pass empty string to clear the browser override. " +
+            "Prefer over realm-wide bind when only one app should use the flow.",
+        ),
     },
     annotations: {
       readOnlyHint: false,
@@ -325,29 +364,56 @@ function updateClientTool(deps: ClientToolDeps): ToolDefinition {
       idempotentHint: true,
     },
     async handler(args) {
-      const changes: {
-        enabled?: boolean;
-        publicClient?: boolean;
-        redirectUris?: string[];
-        webOrigins?: string[];
-      } = {};
-      if (typeof args.enabled === "boolean") {
-        changes.enabled = args.enabled;
+      const changes: ClientUpdate = {
+        ...(typeof args.enabled === "boolean" ? { enabled: args.enabled } : {}),
+        ...(typeof args.publicClient === "boolean"
+          ? { publicClient: args.publicClient }
+          : {}),
+        ...(Array.isArray(args.redirectUris)
+          ? { redirectUris: readStringArray(args.redirectUris) }
+          : {}),
+        ...(Array.isArray(args.webOrigins)
+          ? { webOrigins: readStringArray(args.webOrigins) }
+          : {}),
+      };
+      const attributeMerges: Record<string, string> = {};
+      if (
+        args.attributes !== undefined &&
+        args.attributes !== null &&
+        typeof args.attributes === "object"
+      ) {
+        for (const [key, value] of Object.entries(
+          args.attributes as Record<string, unknown>,
+        )) {
+          if (typeof value === "string") {
+            attributeMerges[key] = value;
+          }
+        }
       }
-      if (typeof args.publicClient === "boolean") {
-        changes.publicClient = args.publicClient;
+      if (typeof args.minimumAcrValue === "string") {
+        attributeMerges["minimum.acr.value"] = args.minimumAcrValue;
       }
-      if (Array.isArray(args.redirectUris)) {
-        changes.redirectUris = readStringArray(args.redirectUris);
+      const withAttributes: ClientUpdate =
+        Object.keys(attributeMerges).length > 0
+          ? { ...changes, attributes: attributeMerges }
+          : changes;
+
+      let finalChanges = withAttributes;
+      if (typeof args.browserFlowAlias === "string") {
+        const alias = args.browserFlowAlias;
+        const flowId =
+          alias === "" ? "" : await resolveBrowserFlowId(deps, alias);
+        finalChanges = {
+          ...withAttributes,
+          authenticationFlowBindingOverrides: { browser: flowId },
+        };
       }
-      if (Array.isArray(args.webOrigins)) {
-        changes.webOrigins = readStringArray(args.webOrigins);
-      }
+
       const result = await new UpdateClientUseCase(
         deps.clientRepository,
       ).execute({
         clientId: ClientId.fromString(String(args.clientId)),
-        changes: changes satisfies ClientUpdate,
+        changes: finalChanges,
       });
       return textResult(
         result.updated
